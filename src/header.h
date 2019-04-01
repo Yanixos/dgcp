@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 
 #define MSG_SIZE 4096-8    // UDP Header is 8 bytes
 
@@ -44,7 +45,7 @@ typedef struct
 
           struct
           {
-               uint64_t src_id;
+               uint64_t src_id;              // the hash of the mac-address
           } hello_short ;
 
           struct
@@ -62,8 +63,8 @@ typedef struct
           struct
           {
                uint64_t sender_id;
-               unit32_t nonce;
-               unit8_t type;
+               unit32_t nonce;          // encode actual time
+               unit8_t type;            // (type == 0) ? print : forward
                char message[4069];
           } data;
 
@@ -75,7 +76,7 @@ typedef struct
 
           struct
           {
-               uint8_t code;
+               uint8_t code;                // [0-3]
                char messgae[4081];
           } goaway;
 
@@ -91,7 +92,32 @@ typedef struct
 {
      msg_hd header;
      msg_body tlv;
-} msg_packet
+} msg_packet;
 
+
+typedef struct
+{
+     unsigned char ip[16];
+     uint16_t port;
+} peer;
+
+typedef struct neighbour
+{
+     uint64_t id;
+     peer*  ip_port;
+     time_t hello_t;
+     time_t long_hello_t;
+     struct neighbour* next;
+} neighbour;
+
+typedef struct
+{
+     neighbour* symteric;
+     neighbour* potential;
+} neighours_list;
+
+
+
+uint64_t init_peer();
 int check_header(msg_hd header);
 int msg_type(char* buffer);
