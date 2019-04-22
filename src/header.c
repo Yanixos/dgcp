@@ -43,26 +43,26 @@ uint32_t generate_nonce()
      return (uint32_t) s;
 }
 
-int check_header(msg_packet* m)
+int check_header(dgc_packet* m)
 {
      return ( m->header.magic == 93 && m->header.version == 2 );
 }
 
-void create_header(msg_packet* m, uint16_t length)
+void create_header(dgc_packet* m, uint16_t length)
 {
      m->header.magic = 93;
      m->header.version = 2;
      m->header.body_length = length;
 }
 
-void create_pad1(msg_packet* m)
+void create_pad1(dgc_packet* m)
 {
      uint16_t body_length = 1;
      create_header(m,body_length);
      m->tlv.pad1.type = 0;
 }
 
-void create_padN(msg_packet* m, uint8_t length)
+void create_padN(dgc_packet* m, uint8_t length)
 {
      uint16_t body_length = length+2;
      create_header(m,body_length);
@@ -71,7 +71,7 @@ void create_padN(msg_packet* m, uint8_t length)
      memset(m->tlv.padn.MBZ,0x00,length);
 }
 
-void create_short_hello(msg_packet* m)
+void create_short_hello(dgc_packet* m)
 {
      uint16_t body_length = 1+1+8;
      create_header(m,body_length);
@@ -80,7 +80,7 @@ void create_short_hello(msg_packet* m)
      m->tlv.s_hello.src_id = MY_ID;
 }
 
-void create_long_hello(msg_packet* m, uint64_t dst_id)
+void create_long_hello(dgc_packet* m, uint64_t dst_id)
 {
      uint16_t body_length = 1+1+16;
      create_header(m,body_length);
@@ -90,29 +90,29 @@ void create_long_hello(msg_packet* m, uint64_t dst_id)
      m->tlv.l_hello.dst_id = dst_id;
 }
 
-void create_neighbour(msg_packet* m, peer* p)
+void create_neighbor(dgc_packet* m, peer* p)
 {
      uint16_t body_length = 1+1+16+2;
      create_header(m,body_length);
-     m->tlv.neighbour.type = 3;
-     m->tlv.neighbour.length = 0x12;
-     memcpy(m->tlv.neighbour.ip,p->ip,16);
-     m->tlv.neighbour.port = p->port;
+     m->tlv.neighbor.type = 3;
+     m->tlv.neighbor.length = 0x12;
+     memcpy(m->tlv.neighbor.ip,p->ip,16);
+     m->tlv.neighbor.port = p->port;
 }
 
-void create_data(msg_packet* m, uint8_t length, uint64_t sender_id, uint32_t nonce, uint8_t type, char* msg)
+void create_data(dgc_packet* m, uint8_t length, uint64_t sender_id, uint32_t nonce, uint8_t data_type, char* msg)
 {
      uint16_t body_length = 1+1+length;
      create_header(m,body_length);
      m->tlv.data.type = 4;
-     m->tlv.data.length = length;
+     m->tlv.data.length = (uint8_t) length;
      m->tlv.data.sender_id = sender_id;
      m->tlv.data.nonce = nonce;
-     m->tlv.data.type = type;
-     memcpy(m->tlv.data.message, msg, length-13);
+     m->tlv.data.data_type = data_type;
+     memcpy(m->tlv.data.message, msg, strlen(msg));
 }
 
-void create_ack(msg_packet* m, uint32_t nonce)
+void create_ack(dgc_packet* m, uint32_t nonce)
 {
      uint16_t body_length = 1+1+8+4;
      create_header(m,body_length);
@@ -122,7 +122,7 @@ void create_ack(msg_packet* m, uint32_t nonce)
      m->tlv.ack.nonce = nonce;
 }
 
-void create_goaway(msg_packet* m, uint8_t length, uint8_t code, char* msg)
+void create_goaway(dgc_packet* m, uint8_t length, uint8_t code, char* msg)
 {
      uint16_t body_length = 1+1+length;
      create_header(m,body_length);
@@ -132,7 +132,7 @@ void create_goaway(msg_packet* m, uint8_t length, uint8_t code, char* msg)
      memcpy(m->tlv.goaway.message, msg, length-1);
 }
 
-void create_warning(msg_packet* m, uint8_t length, char* msg)
+void create_warning(dgc_packet* m, uint8_t length, char* msg)
 {
      uint16_t body_length = 1+1+length;
      create_header(m,body_length);
