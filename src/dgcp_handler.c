@@ -23,16 +23,16 @@ void dgcp_send(int s, unsigned char ipv6[], int port, dgc_packet p2send)
 
      his_peer6.sin6_family = AF_INET6;
      his_peer6.sin6_port = htons(port);
+     memcpy((unsigned char*) &his_peer6.sin6_addr,ipv6,16);
 
-     if(inet_pton(AF_INET6, (char *)ipv6, &his_peer6.sin6_addr)<=0)
+     /*if(inet_pton(AF_INET6, (char *)ipv6, &his_peer6.sin6_addr)<=0)
      {
           fprintf(stderr,"inet_pton has failed\n");
           exit(EXIT_FAILURE);
-     }
+     }*/
 
      socklen_t addrlen = sizeof(his_peer6);
      int size = p2send.header.body_length + 4;
-
      if ( sendto(s, (char*) &p2send, size, 0, (struct sockaddr *) &his_peer6, addrlen) < 0 )
      {
           perror("sendto ");
@@ -56,11 +56,11 @@ void *dgcp_recv(void *arguments)
      unsigned char ipv6[20] = "::ffff:81.194.27.155";
      int port = 1212;
 
-     uint32_t nonce = generate_nonce();
+     /*uint32_t nonce = generate_nonce();
      uint8_t data_type = 0;
      char msg[] = "N1x0s : This project rocks";
-     int l = strlen(msg)+13;
-     dgc_packet p2send = {0};
+     int l = strlen(msg);
+     dgc_packet p2send = {0};*/
 
      fd_set read_fds;
      fd_set write_fds;
@@ -102,8 +102,7 @@ void *dgcp_recv(void *arguments)
                char str[INET6_ADDRSTRLEN];
                if(inet_ntop(AF_INET6, &peer6.sin6_addr, str, sizeof(str)))
                      printf("connection from %s at %d\n", str, ntohs(peer6.sin6_port));
-               printf("WHOLE PACKET:\n");
-               hexdump((char*) &p2recv.tlv, p2recv.header.body_length+4,"Received");
+               hexdump(&p2recv, p2recv.header.body_length+4, "Received");
                // check if exists in neighbor_list peer6.sin6_addr:peer6.sin6_port
 
                his_id = p2recv.tlv.l_hello.src_id;
@@ -112,16 +111,14 @@ void *dgcp_recv(void *arguments)
 			FD_SET(s, &write_fds);
 			if(FD_ISSET(s, &write_fds))
                {
-                    header_handler(s,ipv6,port,p2recv);
-
+                    //header_handler(s,ipv6,port,p2recv);
+                    /*
                     if ( i == 1 )
-                         create_long_hello(&p2send, his_id);
-                    else if ( i == 2 )
                          create_data(&p2send,l,MY_ID,nonce,data_type,msg);
                     else
                          break;
                     dgcp_send(s,ipv6,port,p2send);
-
+                    */
 				FD_CLR(s, &write_fds);
                }
                i++;

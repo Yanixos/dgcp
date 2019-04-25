@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "header.h"
 
-pthread_t tid[1];
+pthread_t tid[2];
 pthread_mutex_t lock;
 
 extern void dgcp_send(int s, unsigned char ipv6[], int port, dgc_packet p2send);

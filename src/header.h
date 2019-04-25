@@ -121,16 +121,17 @@ typedef struct
 } dgc_packet;
 
 
-typedef struct
+typedef struct ip_port
 {
      unsigned char ip[16];
      uint16_t port;
+     struct ip_port* next;
 }  __attribute__((packed, scalar_storage_order("big-endian"))) ip_port;
 
 typedef struct recent_neighbors
 {
      uint64_t id;
-     ip_port*  ip_port;
+     ip_port*  key;
      int symetric;
      time_t hello_t;
      time_t long_hello_t;

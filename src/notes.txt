@@ -4,8 +4,6 @@ do we always EXIT_FAILURE ??
 
 after the recvfrom do we wait for the handle call or we create other process
 
-emitate an attack where you take an id of others and send to every neighbor a goaway tlv
-
 every 30 sec send a long hello to everyone in recent_neighbors list
 
 check last hello time for everyone if > 2min send a goaway with code 2 and if non symetric move him to potential_neighbors else make him non symetric
@@ -19,3 +17,5 @@ if data is not inside data list, print it and forward to everyone except the sen
 when ack is received delete the sender from the list
 
 consider a data as an ack if the data already exists
+
+think about security stuff
