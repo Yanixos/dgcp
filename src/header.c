@@ -90,53 +90,53 @@ void create_long_hello(dgc_packet* m, uint64_t dst_id)
      m->tlv.l_hello.dst_id = dst_id;
 }
 
-void create_neighbor(dgc_packet* m, peer* p)
+void create_neighbor(dgc_packet* m, unsigned char ipv6[], int port)
 {
      uint16_t body_length = 1+1+16+2;
      create_header(m,body_length);
      m->tlv.neighbor.type = 3;
      m->tlv.neighbor.length = 0x12;
-     memcpy(m->tlv.neighbor.ip,p->ip,16);
-     m->tlv.neighbor.port = p->port;
+     memcpy(m->tlv.neighbor.ip,ipv6,16);
+     m->tlv.neighbor.port = port;
 }
 
 void create_data(dgc_packet* m, uint8_t length, uint64_t sender_id, uint32_t nonce, uint8_t data_type, char* msg)
 {
-     uint16_t body_length = 1+1+length;
+     uint16_t body_length = 1+1+13+length;
      create_header(m,body_length);
      m->tlv.data.type = 4;
-     m->tlv.data.length = (uint8_t) length;
+     m->tlv.data.length = length + 13;
      m->tlv.data.sender_id = sender_id;
      m->tlv.data.nonce = nonce;
      m->tlv.data.data_type = data_type;
-     memcpy(m->tlv.data.message, msg, strlen(msg));
+     memcpy(m->tlv.data.message, msg, length);
 }
 
-void create_ack(dgc_packet* m, uint32_t nonce)
+void create_ack(dgc_packet* m, uint64_t sender_id, uint32_t nonce)
 {
      uint16_t body_length = 1+1+8+4;
      create_header(m,body_length);
      m->tlv.ack.type = 5;
      m->tlv.ack.length = 12;
-     m->tlv.ack.sender_id = MY_ID;
+     m->tlv.ack.sender_id = sender_id;
      m->tlv.ack.nonce = nonce;
 }
 
 void create_goaway(dgc_packet* m, uint8_t length, uint8_t code, char* msg)
 {
-     uint16_t body_length = 1+1+length;
+     uint16_t body_length = 1+1+1+length;
      create_header(m,body_length);
      m->tlv.goaway.type = 6;
-     m->tlv.goaway.length = length;
+     m->tlv.goaway.length = length+1;
      m->tlv.goaway.code = code;
-     memcpy(m->tlv.goaway.message, msg, length-1);
+     memcpy(m->tlv.goaway.message, msg, length);
 }
 
 void create_warning(dgc_packet* m, uint8_t length, char* msg)
 {
      uint16_t body_length = 1+1+length;
      create_header(m,body_length);
-     m->tlv.warning.type = 6;
+     m->tlv.warning.type = 7;
      m->tlv.warning.length = length;
      memcpy(m->tlv.warning.message, msg, length);
 }

@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #define DGCP_SIZE 4096-8    // UDP Header is 8 bytes
-
 uint64_t MY_ID;
 
 typedef uint8_t type_t;
@@ -126,23 +125,24 @@ typedef struct
 {
      unsigned char ip[16];
      uint16_t port;
-}  __attribute__((packed, scalar_storage_order("big-endian"))) peer;
+}  __attribute__((packed, scalar_storage_order("big-endian"))) ip_port;
 
-typedef struct neighbor_list
+typedef struct recent_neighbors
 {
      uint64_t id;
-     peer*  ip_port;
+     ip_port*  ip_port;
+     int symetric
      time_t hello_t;
      time_t long_hello_t;
-     int retries;
-     struct neighbor_list* next;
-}  __attribute__((packed, scalar_storage_order("big-endian"))) neighbor_list;
+     struct recent_neighbors* next;
+}  __attribute__((packed, scalar_storage_order("big-endian"))) recent_neighbors;
 
-typedef struct
+typedef struct potential_neighbors
 {
-     neighbor_list* symteric;
-     neighbor_list* potential;
-} neighours;
+     uint64_t id;
+     ip_port*  ip_port;
+     struct potential_neighbors* next;
+}  __attribute__((packed, scalar_storage_order("big-endian"))) potential_neighbors;
 
 typedef struct
 {
@@ -153,8 +153,10 @@ typedef struct
 typedef struct data_list
 {
      data_key key;
+     time_t data_time;
      char* data;
-     neighbor_list* dst;
+     potential_neighbors* data_neighbors;
+     uint8_t nb;
 } __attribute__((packed, scalar_storage_order("big-endian"))) data_list;
 
 extern uint64_t generate_id();
@@ -166,9 +168,9 @@ extern void create_pad1(dgc_packet* m);
 extern void create_padN(dgc_packet* m, uint8_t length);
 extern void create_short_hello(dgc_packet* m);
 extern void create_long_hello(dgc_packet* m, uint64_t dst_id);
-extern void create_neighbor(dgc_packet* m, peer* p);
+extern void create_neighbor(dgc_packet* m, unsigned char ipv6[], int port);
 extern void create_data(dgc_packet* m, uint8_t length, uint64_t sender_id, uint32_t nonce, uint8_t type, char* msg);
-extern void create_ack(dgc_packet* m, uint32_t nonce);
+extern void create_ack(dgc_packet* m, uint64_t sender_id, uint32_t nonce);
 extern void create_goaway(dgc_packet* m, uint8_t length, uint8_t code, char* msg);
 extern void create_warning(dgc_packet* m, uint8_t length, char* msg);
 

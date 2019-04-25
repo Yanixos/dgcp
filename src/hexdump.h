@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <ctype.h>
 
-static void hexdump(const void * memory, size_t bytes)
+static void hexdump(const void * memory, size_t bytes, char in_out[])
 {
      const unsigned char * p, * q;
      int i;
@@ -13,7 +13,8 @@ static void hexdump(const void * memory, size_t bytes)
      p = memory;
      int j=0;
 
-     switch ( p[4] )
+     printf("%s:\n",in_out );
+     switch ( p[0] )
      {
           case 0 :
                printf("PAD1 TLV...\n");
@@ -22,9 +23,9 @@ static void hexdump(const void * memory, size_t bytes)
                printf("PADN TLV...\n");
                break;
           case 2 :
-               if (p[5] == 8)
+               if (p[1] == 8)
                     printf("SHORT HELLO TLV...\n");
-               else if (p[5] == 16)
+               else if (p[1] == 16)
                     printf("LONG HELLO TLV...\n");
                else
                     printf("CORRUPTED HELLO TLV");
