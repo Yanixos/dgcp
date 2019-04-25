@@ -269,7 +269,7 @@ void neighbor_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
 
      if ( tlv.neighbor.length == 18 )
      {
-          hexdump((char *)&tlv,tlv.neighbor.length+2,"Received");
+          hexdump((char *)&tlv, tlv.neighbor.length+2, "Received");
 
           // add to potential neighbor list
           // if the one who sent the packet is my neighbor addd his neighbor to my potential list

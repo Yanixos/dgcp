@@ -131,7 +131,7 @@ typedef struct recent_neighbors
 {
      uint64_t id;
      ip_port*  ip_port;
-     int symetric
+     int symetric;
      time_t hello_t;
      time_t long_hello_t;
      struct recent_neighbors* next;
@@ -150,14 +150,14 @@ typedef struct
      uint32_t nonce;
 }  __attribute__((packed, scalar_storage_order("big-endian"))) data_key;
 
-typedef struct data_list
+typedef struct data_array
 {
      data_key key;
      time_t data_time;
      char* data;
      potential_neighbors* data_neighbors;
      uint8_t nb;
-} __attribute__((packed, scalar_storage_order("big-endian"))) data_list;
+} __attribute__((packed, scalar_storage_order("big-endian"))) data_array;
 
 extern uint64_t generate_id();
 extern uint32_t generate_nonce();
