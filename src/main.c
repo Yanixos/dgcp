@@ -32,7 +32,7 @@ void *hello_refresher(void *args)
           while  ( tmp1 != NULL )
           {
                sleep(30);
-               tmp2 = tmp->key;
+               tmp2 = tmp1->key;
                while ( tmp2 )
                {
                     dgc_packet p2send = {0};

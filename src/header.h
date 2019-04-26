@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 
 #define DGCP_SIZE 4096-8    // UDP Header is 8 bytes
 uint64_t MY_ID;

@@ -1,5 +1,10 @@
 recent_neighbors *MY_RN;
 potential_neighbors *MY_PN;
+#define TAILLE 256
+data_array MY_DATA[TAILLE];
+int COUNT 0;
+
+/*========= Function for RN =========*/
 
 int search_id_RN(uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
     *current = MY_RN;
@@ -100,7 +105,27 @@ void delete_key_RN(uint64_t id,ip_port*  key){
   }
 }
 
+void modify_hello(uint64_t id,time_t hello_t){
+  recent_neighbors *current,*precedent;
+  if(search_id_RN(id,&current,&precedent)){
+    current->hello_t=hello_t;
+  }
+}
 
+void modify_long_hello(uint64_t id,time_t long_hello_t){
+  recent_neighbors *current,*precedent;
+  if(search_id_RN(id,&current,&precedent)){
+    current->long_hello_t=long_hello_t;
+  }
+}
+
+void modify_symetric(uint64_t id,int symetric){
+  recent_neighbors *current,*precedent;
+  if(search_id_RN(id,&current,&precedent)){
+    current->symetric=symetric;
+  }
+}
+/*========= Function for PN =========*/
 
 int search_id_PN(uint64_t id,potential_neighbors **current,potential_neighbors **precedent){
     *current = MY_PN;
@@ -167,5 +192,40 @@ void create_potentiel_neighbor(uint64_t id,ip_port*  key,int symetric,time_t hel
 
     MY_PN=rn;
 
+  }
+}
+
+
+/*========= Function for DATA =========*/
+
+int equal_key_data(data_key *key1, data_key *key2){
+   return (key1->id == key2->id) & (key1->nonce == key2->nonce)
+}
+
+int search_data(data_key key){
+
+    for(int i=0,i<TAILLE,i++)
+    {
+        if (equal_key_data(key,current->key))
+            return i;
+    }
+    return -1;
+}
+
+void create_data(data_key key,time_t data_time,char* data,potential_neighbors* data_neighbors,uint8_t nb){
+
+  //neighbor exist deja
+  if(search_data(key)==-1){
+    //creation de l'element
+    data_array* elem= (data_array *) calloc(1,sizeof(data_array));
+    elem->key = key;
+    elem->data_time=data_time;
+    memcpy(elem->data,data,strlen(data));
+    elem->data_neighbors=data_neighbors;
+    elem-nb=nb;
+
+    //ajout d'un nouveau data
+    MY_DATA[COUNT]=elem;
+    COUNT++;
   }
 }
