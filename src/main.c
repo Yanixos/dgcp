@@ -14,25 +14,72 @@
 
 #define PORT 1212
 
-typedef struct
-{
-     int s;
-     recent_neighbors* rn;
-} arguments;
+recent_neighbors* rn;
 
-void *hello_refresher(void *args)
+
+void share_neighbors(int s)
 {
-     arguments* arg = args;
+     unsigned char dgcp_neighbor[DGCP_SIZE] = {0};
+     unsigned char* ptr = dgcp_neighbor;
+     ptr[0] =  93;
+     ptr[1] = 2;
+     uint16_t body_length = 0;
+     ptr += 4;
+     recent_neighbors* tmp1 = symetric_neighbors();
+     ip_port* tmp2;
+     while ( tmp1 != NULL && DGCP_SIZE - 4 )
+     {
+          tmp2 = tmp1->key;
+          while ( tmp2 != NULL && body_length < DGCP_SIZE - 4 )
+          {
+               ptr[0] = 3;
+               ptr[1] = 18;
+               ptr += 2;
+               memcpy(ptr,tmp2->ip,16);
+               ptr += 16;
+               snprintf((char*)ptr,2,"%d",tmp2->port);
+               ptr += 2;
+               body_length += 20;
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+     uint16_t be = htons(body_length);
+     snprintf((char*)dgcp_neighbor+2,2,"%d",be);
+     dgc_packet p2send = {0};
+     memcpy(&p2send, (dgc_packet*) dgcp_neighbor,body_length+4);
+
+     tmp1 = symetric_neighbors();
+     while ( tmp1 != NULL )
+     {
+          tmp2 = tmp1->key;
+          while ( tmp2 != NULL )
+          {
+               dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+}
+
+
+void *routine(void *args)
+{
+     int *arg = (int*) args;
+     int s = *arg;
      recent_neighbors* tmp1;
      ip_port* tmp2;
-     int s = arg->s;
+     int i = 0;
      while (1)
      {
-          tmp1 = arg->rn;
+          tmp1 = rn;
           while  ( tmp1 != NULL )
           {
-               sleep(30);
-               tmp2 = tmp->key;
+               sleep(3);
+               i++;
+               //if ( i % 4 == 0 )
+               //     share_neighbors(s);
+               tmp2 = tmp1->key;
                while ( tmp2 )
                {
                     dgc_packet p2send = {0};
@@ -45,7 +92,7 @@ void *hello_refresher(void *args)
      }
 }
 
-int main()
+int main(int argc, char** argv)
 {
      int s,b;
      struct sockaddr_in6 my_peer6 = {0};
@@ -65,11 +112,11 @@ int main()
           exit(EXIT_FAILURE);
      }
 
-     recent_neighbors* rn = (recent_neighbors *) calloc(1,sizeof(recent_neighbors));
+     rn = (recent_neighbors *) calloc(1,sizeof(recent_neighbors));
      rn->id = 0x677DC6234D2763B5;
      rn->key = (ip_port*) calloc(1,sizeof(ip_port));
      memcpy(rn->key->ip,(char *)&his_peer6.sin6_addr,16);
-     rn->key->port = port;
+     rn->key->port = htons(port);
      rn->key->next = NULL;
      rn->symetric = 1;
      rn->hello_t = 0;
@@ -100,13 +147,12 @@ int main()
           exit(EXIT_FAILURE);
      }
 
-     arguments args = {s,rn};
      int error = pthread_create(&(tid[0]), NULL, &dgcp_recv, &s);
      if ( error != 0 )
           printf("\nReceive thread can't be created :[%s]", strerror(error));
-     error = pthread_create(&(tid[1]), NULL, &hello_refresher, (void*)&args);
+     error = pthread_create(&(tid[1]), NULL, &routine, &s );
      if ( error != 0 )
-          printf("\nRefresh thread can't be created :[%s]", strerror(error));
+          printf("\nRoutine thread can't be created :[%s]", strerror(error));
 
      //dgc_packet p2send = {0};
      //create_pad1(&p2send);
