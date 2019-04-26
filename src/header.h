@@ -141,7 +141,7 @@ typedef struct recent_neighbors
 typedef struct potential_neighbors
 {
      uint64_t id;
-     ip_port*  ip_port;
+     ip_port*  key;
      struct potential_neighbors* next;
 }  __attribute__((packed, scalar_storage_order("big-endian"))) potential_neighbors;
 
