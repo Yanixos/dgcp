@@ -1,8 +1,7 @@
-recent_neighbors *MY_RN;
-potential_neighbors *MY_PN;
-#define TAILLE 256
-data_array MY_DATA[TAILLE];
-int COUNT 0;
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "neighborsController.h"
 
 /*========= Function for RN =========*/
 
@@ -223,7 +222,7 @@ int search_data(data_key key){
     return -1;
 }
 
-void create_data( ey,time_t data_time,char* data,potential_neighbors* data_neighbors,uint8_t nb){
+void add_data(data_key key,time_t data_time,char* data,potential_neighbors* data_neighbors,uint8_t nb){
 
   //neighbor exist deja
   if(search_data(key)==-1){
@@ -240,13 +239,6 @@ void create_data( ey,time_t data_time,char* data,potential_neighbors* data_neigh
       COUNT=0;
     MY_DATA[COUNT]=elem;
     COUNT++;
-
-  }
-}
-
-void delete_data(data_key key){
-  int i=search_data(key)!=-1
-  if(i!=-1){
 
   }
 }
