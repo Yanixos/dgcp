@@ -262,17 +262,3 @@ int add_data(data_key key,char* data, uint8_t type, recent_neighbors* data_neigh
     return r;
   }
 }
-
-void move_to_potential(ip_port* key, uint64_t id)
-{
-     for (ip_port* tmp=key; tmp != null; tmp = tmp->next)
-     {
-          dgc_packet p2send = {0};
-          char msg[] = "You didn't say hello since 2 minutes ago";
-          create_goaway(&p2send,strlen(msg),2,msg);
-          dgcp_send(s,tmp->ip,tmp->port,p2send);
-          create_potentiel_neighbor(id,tmp);
-     }
-     free(key);
-     delete_id_RN(MY_RN,id);
-}
