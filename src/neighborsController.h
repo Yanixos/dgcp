@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "header.h"
 
-#define DATA_SIZE 256
+#define TAILLE 256
 #define RETRIES 5
 
 recent_neighbors *MY_RN;
