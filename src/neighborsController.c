@@ -5,9 +5,6 @@
 
 /*========= Function for RN =========*/
 
-// fix symetric_neighbors : u r not creating , ur just linking them, i need a real copy
-// fix search_key_RN : remove search id, bcz some neighbors doesn't have an id, we need to search everywhere for the (ip,port)
-
 int search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
     *current = list;
     *precedent=NULL;
@@ -134,7 +131,10 @@ void delete_id_RN(recent_neighbors *list,uint64_t id){
   }
 }
 
+<<<<<<< HEAD
+=======
 //sans id
+>>>>>>> 5b4f852b2da7b194996d4a373336c28729948f46
 void delete_key_RN(recent_neighbors *list,ip_port*  key){
   ip_port *current,*precedent;
   uint64_t tmp;
@@ -184,10 +184,21 @@ int search_id_PN(potential_neighbors *list,uint64_t id,potential_neighbors **cur
 }
 
 
+<<<<<<< HEAD
 int search_key_PN(potential_neighbors *list,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
   potential_neighbors *tmp1=list,*tmp2=NULL;
+=======
+<<<<<<< HEAD
+int search_key_PN(ip_port* key,ip_port **current,ip_port **precedent){
+  potential_neighbors *tmp1,*tmp2;
+  if(search_id_PN(id,&tmp1,&tmp2)){
+=======
+int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
+  potential_neighbors *tmp1=MY_PN,*tmp2=NULL;
+>>>>>>> 0b10226947ff4633da128f1b9fd7e83ff0ebce07
   while(tmp1!=NULL){
     id=tmp1;
+>>>>>>> 5b4f852b2da7b194996d4a373336c28729948f46
     *current = tmp1->key;
     *precedent=NULL;
     while (*current != NULL)
@@ -300,4 +311,18 @@ int add_data(data_key key,char* data, uint8_t type, recent_neighbors* data_neigh
     COUNT++;
     return r;
   }
+}
+
+void move_to_potential(ip_port* key, uint64_t id)
+{
+     for (ip_port* tmp=key; tmp != null; tmp = tmp->next)
+     {
+          dgc_packet p2send = {0};
+          char msg[] = "You didn't say hello since 2 minutes ago";
+          create_goaway(&p2send,strlen(msg),2,msg);
+          dgcp_send(s,tmp->ip,tmp->port,p2send);
+          create_potentiel_neighbor(id,tmp);
+     }
+     free(key);
+     delete_id_RN(MY_RN,id);
 }
