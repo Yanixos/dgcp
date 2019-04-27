@@ -6,4 +6,4 @@ gcc -o neighborsController.o -fPIC -c neighborsController.c -Wall
 ar rcs neighborsController.a neighborsController.o
 gcc -o dgcp_handler.o -fPIC -c dgcp_handler.c -Wall
 ar rcs dgcp_handler.a dgcp_handler.o
-gcc main.c -o main -lpthread -Wall ./header.a ./dgcp_handler.a
+gcc main.c -o main -lpthread -lm -Wall ./header.a ./dgcp_handler.a

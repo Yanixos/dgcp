@@ -14,139 +14,8 @@
 #include "dgcp_handler.h"
 
 #define PORT 1212
-#define NB_RETRIES 5
 
-recent_neighbors* rn;
-
-void data_flood(int s)
-{
-     for (int i=0; i<NB_DATA; i++)
-     {
-          while ( DATA[i].nb < NB_RETRIES )
-          {
-               potential_neighbors* tmp1 = DATA[i].data_neighbors;
-               while ( tmp1 != NULL )
-               {
-                    ip_port* tmp2 = tmp1->key;
-                    while ( tmp2 != NULL )
-                    {
-                         double t1 = pow(2,DATA[i].nb-1);
-                         double t2 = pow(2,DATA[i].nb);
-                         int t = (t1 + t2) / 2;
-                         sleep(t);
-                         dgc_packet p2send = {0};
-                         create_data(&p2send,strlen(DATA[i].data),DATA[i].key.id,DATA[i].key.nonce,DATA[i].type,DATA[i].data);
-                         dgcp_send(s,tmp2->ip,tmp2->port,p2send);
-                         tmp2 = tmp2->next;
-                    }
-                    tmp1 = tmp1->next;
-               }
-               DATA[i].nb += 1;
-          }
-     }
-     data_clean(s);
-}
-
-void data_clean(int s )
-{
-     while ( NB_DATA > 0 )
-     {
-          potential_neighbors* tmp1 = DATA[i].data_neighbors;
-          while ( tmp1 != NULL )
-          {
-               ip_port* tmp2 = tmp1->key;
-               while ( tmp2 != NULL )
-               {
-                    dgc_packet p2send = {0};
-                    char msg[50];
-                    sprintf(msg,"You didn't ack this data : %d:%d",DATA[0].key.id,DATA[0].key.nonce);
-                    create_goaway(&p2send,strlen(msg),2,msg);
-                    dgcp_send(s,tmp2->ip,tmp2->port,p2send);
-                    tmp2 = tmp2->next;
-               }
-               tmp1 = tmp1->next;
-          }
-     }
-}
-
-void share_neighbors(int s)
-{
-     unsigned char dgcp_neighbor[DGCP_SIZE] = {0};
-     unsigned char* ptr = dgcp_neighbor;
-     ptr[0] =  93;
-     ptr[1] = 2;
-     uint16_t body_length = 0;
-     ptr += 4;
-     recent_neighbors* tmp1 = symetric_neighbors();
-     ip_port* tmp2;
-     while ( tmp1 != NULL && DGCP_SIZE - 4 )
-     {
-          tmp2 = tmp1->key;
-          while ( tmp2 != NULL && body_length < DGCP_SIZE - 4 )
-          {
-               ptr[0] = 3;
-               ptr[1] = 18;
-               ptr += 2;
-               memcpy(ptr,tmp2->ip,16);
-               ptr += 16;
-               snprintf((char*)ptr,2,"%d",tmp2->port);
-               ptr += 2;
-               body_length += 20;
-               tmp2 = tmp2->next;
-          }
-          tmp1 = tmp1->next;
-     }
-     uint16_t be = htons(body_length);
-     snprintf((char*)dgcp_neighbor+2,2,"%d",be);
-     dgc_packet p2send = {0};
-     memcpy(&p2send, (dgc_packet*) dgcp_neighbor,body_length+4);
-
-     tmp1 = symetric_neighbors();
-     while ( tmp1 != NULL )
-     {
-          tmp2 = tmp1->key;
-          while ( tmp2 != NULL )
-          {
-               dgcp_send(s,tmp2->ip,tmp2->port,p2send);
-               tmp2 = tmp2->next;
-          }
-          tmp1 = tmp1->next;
-     }
-}
-
-
-void *routine(void *args)
-{
-     int *arg = (int*) args;
-     int s = *arg;
-     recent_neighbors* tmp1;
-     ip_port* tmp2;
-     int i = 0;
-     while (1)
-     {
-          tmp1 = rn;
-          while  ( tmp1 != NULL )
-          {
-<<<<<<< HEAD
-               sleep(30);
-=======
-               sleep(3);
-               i++;
-               //if ( i % 4 == 0 )
-               //     share_neighbors(s);
->>>>>>> 77892b2f304e5dd43547ab3295ee38792c9ed4d9
-               tmp2 = tmp1->key;
-               while ( tmp2 )
-               {
-                    dgc_packet p2send = {0};
-                    create_long_hello(&p2send,tmp1->id);
-                    dgcp_send(s,tmp2->ip,tmp2->port,p2send);
-                    tmp2 = tmp2->next;
-               }
-               tmp1 = tmp1->next;
-          }
-     }
-}
+void *routine(void *args);
 
 int main(int argc, char** argv)
 {
@@ -233,4 +102,37 @@ int main(int argc, char** argv)
 
      close(s);
      return 0;
+}
+
+void *routine(void *args)
+{
+     int *arg = (int*) args;
+     int s = *arg;
+     recent_neighbors* tmp1;
+     ip_port* tmp2;
+     int i = 0;
+     while (1)
+     {
+          tmp1 = rn;
+          while  ( tmp1 != NULL )
+          {
+               sleep(30);
+               sleep(3);
+               i++;
+               if ( i % 4 == 0 )
+               {
+                    share_neighbors(s);
+                    check_neighbors(s);
+               }
+               tmp2 = tmp1->key;
+               while ( tmp2 )
+               {
+                    dgc_packet p2send = {0};
+                    create_long_hello(&p2send,tmp1->id);
+                    dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+                    tmp2 = tmp2->next;
+               }
+               tmp1 = tmp1->next;
+          }
+     }
 }

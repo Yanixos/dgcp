@@ -131,10 +131,7 @@ void delete_id_RN(recent_neighbors *list,uint64_t id){
   }
 }
 
-<<<<<<< HEAD
-=======
-//sans id
->>>>>>> 5b4f852b2da7b194996d4a373336c28729948f46
+
 void delete_key_RN(recent_neighbors *list,ip_port*  key){
   ip_port *current,*precedent;
   uint64_t tmp;
@@ -184,21 +181,17 @@ int search_id_PN(potential_neighbors *list,uint64_t id,potential_neighbors **cur
 }
 
 
-<<<<<<< HEAD
+
 int search_key_PN(potential_neighbors *list,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
   potential_neighbors *tmp1=list,*tmp2=NULL;
-=======
-<<<<<<< HEAD
+
 int search_key_PN(ip_port* key,ip_port **current,ip_port **precedent){
   potential_neighbors *tmp1,*tmp2;
   if(search_id_PN(id,&tmp1,&tmp2)){
-=======
 int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
   potential_neighbors *tmp1=MY_PN,*tmp2=NULL;
->>>>>>> 0b10226947ff4633da128f1b9fd7e83ff0ebce07
   while(tmp1!=NULL){
     id=tmp1;
->>>>>>> 5b4f852b2da7b194996d4a373336c28729948f46
     *current = tmp1->key;
     *precedent=NULL;
     while (*current != NULL)

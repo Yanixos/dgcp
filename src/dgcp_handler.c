@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include "hexdump.h"
 #include "dgcp_handler.h"
+#include "neighborsController.h"
 
 uint64_t his_id;
 
@@ -24,12 +25,6 @@ void dgcp_send(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2send)
      his_peer6.sin6_family = AF_INET6;
      his_peer6.sin6_port = port;
      memcpy((unsigned char*) &his_peer6.sin6_addr,ipv6,16);
-
-     /*if(inet_pton(AF_INET6, (char *)ipv6, &his_peer6.sin6_addr)<=0)
-     {
-          fprintf(stderr,"inet_pton has failed\n");
-          exit(EXIT_FAILURE);
-     }*/
 
      socklen_t addrlen = sizeof(his_peer6);
      int size = p2send.header.body_length + 4;
@@ -53,18 +48,8 @@ void *dgcp_recv(void *arguments)
      socklen_t addrlen = sizeof(peer6);
      dgc_packet p2recv = {0};
 
-     unsigned char ipv6[20] = "::ffff:81.194.27.155";
-     uint16_t port = 1212;
-
-     /*uint32_t nonce = generate_nonce();
-     uint8_t data_type = 0;
-     char msg[] = "N1x0s : This project rocks";
-     int l = strlen(msg);
-     dgc_packet p2send = {0};*/
-
      fd_set read_fds;
      fd_set write_fds;
-     int i =1;
      int rc = fcntl(s, F_GETFL);
      if ( rc < 0 )
      {
@@ -98,30 +83,19 @@ void *dgcp_recv(void *arguments)
                     exit(EXIT_FAILURE);
                }
                FD_CLR(s, &read_fds);
+               time_t t = time(NULL);
                getpeername(s, (struct sockaddr *) &peer6, &addrlen);
                char str[INET6_ADDRSTRLEN];
                if(inet_ntop(AF_INET6, &peer6.sin6_addr, str, sizeof(str)))
                      printf("connection from %s at %d\n", str, ntohs(peer6.sin6_port));
-               hexdump(&p2recv, p2recv.header.body_length+4, "Received");
-               // check if exists in neighbor_list peer6.sin6_addr:peer6.sin6_port
-
-               his_id = p2recv.tlv.l_hello.src_id;
-
+               //hexdump(&p2recv, p2recv.header.body_length+4, "Received");
+               header_handler(s,&peer6.sin6_add,peer6.sin6_port,p2recv,t)
                FD_ZERO(&write_fds);
 			FD_SET(s, &write_fds);
 			if(FD_ISSET(s, &write_fds))
-               {
-                    //header_handler(s,ipv6,port,p2recv);
-                    /*
-                    if ( i == 1 )
-                         create_data(&p2send,l,MY_ID,nonce,data_type,msg);
-                    else
-                         break;
-                    dgcp_send(s,ipv6,port,p2send);
-                    */
-				FD_CLR(s, &write_fds);
-               }
-               i++;
+               	FD_CLR(s, &write_fds);
+
+
           }
      }
      pthread_mutex_unlock(&lock);
@@ -129,7 +103,7 @@ void *dgcp_recv(void *arguments)
      return NULL;
 }
 
-void header_handler(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2recv)
+void header_handler(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2recv, time_t t)
 {
      unsigned char buff[DGCP_SIZE];
      memcpy(buff, (const unsigned char*) &p2recv, sizeof(p2recv));
@@ -177,7 +151,7 @@ void header_handler(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2rec
           memset(&tlv,0x00,sizeof(msg_body));
           memcpy(&tlv, (msg_body*) tmp,tlv_length+2);
           type = tmp[0];
-          call_tlv_handler(s,ipv6,port,tlv,type);
+          call_tlv_handler(s,ipv6,port,tlv,type,t);
           if ( type == 0 )
           {
                body_length -= 1;
@@ -193,7 +167,7 @@ void header_handler(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2rec
 }
 
 
-void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, uint8_t type)
+void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, uint8_t type, time_t t)
 {
      switch ( type )
      {
@@ -204,19 +178,19 @@ void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, 
                hexdump((char *)&tlv,tlv.padn.length,"Received");
                break;
           case 2 :
-               hello_handler(s,ipv6,port,tlv);
+               hello_handler(s,ipv6,port,tlv,t);
                break;
           case 3 :
-               neighbor_handler(s,ipv6,port,tlv);
+               neighbor_handler(s,ipv6,port,tlv,t);
                break;
           case 4 :
-               data_handler(s,ipv6,port,tlv);
+               data_handler(s,ipv6,port,tlv,t);
                break;
           case 5 :
-               ack_handler(s,ipv6,port,tlv);
+               ack_handler(s,ipv6,port,tlv,t);
                break;
           case 6 :
-               goaway_handler(s,ipv6,port,tlv);
+               goaway_handler(s,ipv6,port,tlv,t);
                break;
           case 7 :
                printf("%s sent a warning : %s\n",ipv6,tlv.warning.message);
@@ -224,13 +198,21 @@ void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, 
      }
 }
 
-void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
+void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time_t t)
 {
      dgc_packet response = {0};
+     recent_neighbors *current;
+     ip_port* key;
+     key->ip = ipv6;
+     key->port = port;
      if ( tlv.s_hello.length == 8 )
      {
           hexdump((char *)&tlv,tlv.s_hello.length+2,"Received");
-          // add to potential neighbor list
+          if (  (current = search_recent_neighbors_key(MY_RN,key)) )
+               current->hello_t = t;
+          else
+               create_recent_neighbor(0,key,0,t,0);
+          delete_potential_neighbor(key);
      }
      else if ( tlv.s_hello.length == 16 )
      {
@@ -244,10 +226,14 @@ void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
           }
           else
           {
-               his_id = tlv.l_hello.src_id;          // to remove *****************************
-               create_long_hello(&response,his_id);         //
-               dgcp_send(s,ipv6,port,response);             //
-               // add to symetric neighbor list
+               if (search_id_RN(MY_RN,tlv.l_hello.src_id,&current,&precedent))
+               {
+                    current->hello_t = t;
+                    current->long_hello_t = t;
+               }
+               else
+                    create_recent_neighbor(tlv.l_hello.src_id,key,1,t,t);
+               delete_potential_neighbor(key);
           }
      }
      else
@@ -260,16 +246,19 @@ void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
      }
 }
 
-void neighbor_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
+void neighbor_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time_t t)
 {
      dgc_packet response = {0};
+     recent_neighbors *current;
+     ip_port* key;
+     key->ip = ipv6;
+     key->port = port;
 
      if ( tlv.neighbor.length == 18 )
      {
           hexdump((char *)&tlv, tlv.neighbor.length+2, "Received");
-
-          // add to potential neighbor list
-          // if the one who sent the packet is my neighbor addd his neighbor to my potential list
+          if ( (current = search_recent_neighbors_key(MY_RN,key)) && current->symetric == 1)
+               create_potentiel_neighbor(0,key);
      }
      else
      {
@@ -280,42 +269,70 @@ void neighbor_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
      }
 }
 
-void data_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
+void data_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time_t t)
 {
      dgc_packet response = {0};
+     recent_neighbors *current;
+     ip_port* key;
+     key->ip = ipv6;
+     key->port = port;
 
      hexdump((char *)&tlv,tlv.data.length+2,"Received");
-     /*
-     if the neighbor is not in my neighbor list send a warning saying you sent me data but you are nt my data
-     printf("Received ack from a stranger\n");
-     char msg[] = "You sent Data but you are not symetric";
-     create_warning(&response,strlen(msg),msg);
-     dgcp_send(s,ipv6,port,response);
-     */
-     if ( tlv.data.data_type == 0 )
-          printf("%s\n",tlv.data.message);
-     create_ack(&response,tlv.data.sender_id,tlv.data.nonce);
-     dgcp_send(s,ipv6,port,response);
+     if ( (current = search_recent_neighbors_key(MY_RN,key)) == NULL || current->symetric == 0)
+     {
+          printf("Received ack from a stranger\n");
+          char msg[] = "You sent Data but you are not symetric";
+          create_warning(&response,strlen(msg),msg);
+          dgcp_send(s,ipv6,port,response);
+          retun;
+     }
+     int i;
+     data_key dkey = {tlv.data.id,tlv.data.nonce};
+     if ( ( i = search_data(dkey) ) == -1)
+     {
+          create_ack(&response,tlv.data.sender_id,tlv.data.nonce);
+          dgcp_send(s,ipv6,port,response);
+          if ( tlv.data.data_type == 0 )
+               printf("%s\n",tlv.data.message);
 
-     // forward the msg to my neighbors
+          recent_neighbors* n = symetric_neighbors();
+          int j = add_data(key,tlv.data.data,tlv.data.type,n);
+          data_flood(s,j);
+     }
+     else
+     {
+          delete_key_RN(MY_DATA[i],key);
+     }
 }
 
-void ack_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
+void ack_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time_t t)
 {
      dgc_packet response = {0};
+     recent_neighbors *current;
+     ip_port* key;
+     key->ip = ipv6;
+     key->port = port;
 
      if ( tlv.ack.length == 12  )
      {
           hexdump((char *)&tlv,tlv.ack.length+2,"Received");
-          /*
-          if the neighbor is not in my neighbor list send a warning saying you sent me data but you are nt my data
-          printf("Received ack from a stranger\n");
-          char msg[] = "You sent Ack but you are not my neighbor";
-          create_warning(&response,strlen(msg),msg);
-          dgcp_send(s,ipv6,port,response);
-          */
-          // else
-          // remove the sender from the list of data, if he even exists
+          if ( (current = search_key_RN(MY_RN,key)) == NULL || current->symetric == 0)
+          {
+               printf("Received ack from a stranger\n");
+               char msg[] = "You sent Data but you are not my  neighbor";
+               create_warning(&response,strlen(msg),msg);
+               dgcp_send(s,ipv6,port,response);
+          }
+          data_key dkey = {tlv.data.id,tlv.data.nonce};
+          int i;
+          if ( ( i = search_data(dkey) ) == -1)
+          {
+               char msg[] = "You sent Ack for Data that i didn't send";
+               create_warning(&response,strlen(msg),msg);
+               dgcp_send(s,ipv6,port,response);
+          }
+          else
+               delete_key_RN(MY_DATA[i],key);
      }
      else
      {
@@ -325,40 +342,188 @@ void ack_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
           dgcp_send(s,ipv6,port,response);
      }
 }
-void goaway_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
+void goaway_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time_t t)
 {
      dgc_packet response = {0};
+     recent_neighbors *current;
+     ip_port* key;
+     key->ip = ipv6;
+     key->port = port;
 
      hexdump((char *)&tlv,tlv.goaway.length+2,"Received");
 
-     /*
-     if the neighbor is not in my neighbor list send a warning saying you sent me data but you are nt my data
-     printf("Received goaway from a stranger\n");
-     char msg[] = "You went away but I don't know you";
-     create_warning(&response,strlen(msg),msg);
-     dgcp_send(s,ipv6,port,response);
-     */
+     if ( (current = search_recent_neighbors_key(MY_RN,key)) == NULL )
+     {
+          printf("Received goaway from a stranger\n");
+          char msg[] = "You went away but I don't know you";
+          create_warning(&response,strlen(msg),msg);
+          dgcp_send(s,ipv6,port,response);
+          return;
+     }
+
      if ( tlv.goaway.code == 1 )
-     {
           printf("%s is leaving the network\n",ipv6);
-          // move ipv6 from neighbot list to potential
-     }
+
      else if ( tlv.goaway.code == 2 )
-     {
           printf("%s is saying that we didn't ack his data or we didn't send him a hello since long time.\n",ipv6);
-          // move ipv6 from neighbot list to potential
-          // get the id of the sender
-          // create_long_hello(&response,his_id);
-          // dgcp_send(s,ipv6,port,response);
-     }
      else if ( tlv.goaway.code == 3 )
-     {
           printf("%s is saying that we didn't respect the protocol\n", ipv6);
-          // move ipv6 from neighbor list to  potential
-     }
      else
-     {
           printf("%s is asking us to remove him for an unknown reason\n",ipv6 );
-          // move ipv6 from neighbor list to potential
+
+     if ( current->symetric )
+          current->symetric = 0;
+     else
+          move_to_potential(current->key, current->id,0);
+}
+
+void data_flood(int s, int i)
+{
+     int j = 0;
+     while ( j  < RETRIES )
+     {
+          recent_neighbors* tmp1 = DATA[i].data_neighbors;
+          while ( tmp1 != NULL )
+          {
+               ip_port* tmp2 = tmp1->key;
+               while ( tmp2 != NULL )
+               {
+                    double t1 = pow(2,DATA[i].nb-1);
+                    double t2 = pow(2,DATA[i].nb);
+                    int t = (t1 + t2) / 2;
+                    sleep(t);
+                    dgc_packet p2send = {0};
+                    add_data(&p2send,strlen(DATA[i].data),DATA[i].key.id,DATA[i].key.nonce,DATA[i].type,DATA[i].data);
+                    dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+                    tmp2 = tmp2->next;
+               }
+               tmp1 = tmp1->next;
+          }
+          j++;
+     }
+     flood_clean(s,i);
+}
+
+void flood_clean(int s,int i)
+{
+     recent_neighbors* tmp1 = DATA[i].data_neighbors;
+     while ( tmp1 != NULL )
+     {
+          ip_port* tmp2 = tmp1->key;
+          while ( tmp2 != NULL )
+          {
+               dgc_packet p2send = {0};
+               char msg[50];
+               sprintf(msg,"You didn't ack this data : %d:%d",DATA[i].key.id,DATA[i].key.nonce);
+               create_goaway(&p2send,strlen(msg),2,msg);
+               dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+}
+
+void share_neighbors(int s)
+{
+     unsigned char dgcp_neighbor[DGCP_SIZE] = {0};
+     unsigned char* ptr = dgcp_neighbor;
+     ptr[0] =  93;
+     ptr[1] = 2;
+     uint16_t body_length = 0;
+     ptr += 4;
+     recent_neighbors* tmp1 = symetric_neighbors();
+     ip_port* tmp2;
+     while ( tmp1 != NULL && DGCP_SIZE - 4 )
+     {
+          tmp2 = tmp1->key;
+          while ( tmp2 != NULL && body_length < DGCP_SIZE - 4 )
+          {
+               ptr[0] = 3;
+               ptr[1] = 18;
+               ptr += 2;
+               memcpy(ptr,tmp2->ip,16);
+               ptr += 16;
+               snprintf((char*)ptr,2,"%d",tmp2->port);
+               ptr += 2;
+               body_length += 20;
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+     uint16_t be = htons(body_length);
+     snprintf((char*)dgcp_neighbor+2,2,"%d",be);
+     dgc_packet p2send = {0};
+     memcpy(&p2send, (dgc_packet*) dgcp_neighbor,body_length+4);
+
+     tmp1 = symetric_neighbors();
+     while ( tmp1 != NULL )
+     {
+          tmp2 = tmp1->key;
+          while ( tmp2 != NULL )
+          {
+               dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+}
+
+void check_neighbors(int s)
+{
+     recent_neighbors* tmp1 = MY_RN;
+     time_t s = time(NULL);
+     while ( tmp1 != NULL )
+     {
+          if ( tmp1->symetric )
+          {
+               if ( tmp1->long_hello_t > s + 120 )
+               {
+                    if ( tmp1->hello_t > s + 120 )
+                         move_to_potential(tmp1->key,tmp1->id,1);
+                    else
+                         tmp1->symetric = 0;
+               }
+          }
+          else
+          {
+               if ( tmp1->hello_t > s + 120 )
+                    move_to_potential(tmp1->key,tmp1->id,1);
+          }
+          tmp1 = tmp1->next;
+     }
+     uint16_t be = htons(body_length);
+     snprintf((char*)dgcp_neighbor+2,2,"%d",be);
+     dgc_packet p2send = {0};
+     memcpy(&p2send, (dgc_packet*) dgcp_neighbor,body_length+4);
+
+     tmp1 = symetric_neighbors();
+     while ( tmp1 != NULL )
+     {
+          tmp2 = tmp1->key;
+          while ( tmp2 != NULL )
+          {
+               dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+}
+
+void move_to_potential(ip_port* key, uint64_t id,int flag)
+{
+     if ( !flag )
+     {
+          create_potentiel_neighbor(id,key);
+          delete_key_RN(MY_RN,key);
+          return ;
+     }
+     for (ip_port* tmp=key; tmp != null; tmp = tmp->next)
+     {
+
+          dgc_packet p2send = {0};
+          char msg[] = "You didn't say hello since 2 minutes ago";
+          create_goaway(&p2send,strlen(msg),2,msg);
+          dgcp_send(s,tmp->ip,tmp->port,p2send);
+          delete_key_RN(MY_RN,tmp);
      }
 }

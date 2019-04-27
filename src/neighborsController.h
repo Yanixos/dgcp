@@ -27,6 +27,5 @@ extern int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **pr
 extern void create_potentiel_neighbor(uint64_t id, ip_port*  key);
 extern int search_data(data_key key);
 extern int add_data(data_key key, char* data,uint8_t type, recent_neighbors* data_neighbors);
-extern void move_to_potential(ip_port* key, uint64_t id);
 
 #endif
