@@ -157,7 +157,7 @@ typedef struct data_array
      data_key key;
      time_t data_time;
      char* data;
-     potential_neighbors* data_neighbors;
+     recent_neighbors* data_neighbors;
      uint8_t nb;
 } __attribute__((packed, scalar_storage_order("big-endian"))) data_array;
 

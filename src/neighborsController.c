@@ -6,8 +6,8 @@ int COUNT 0;
 
 /*========= Function for RN =========*/
 
-int search_id_RN(uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
-    *current = MY_RN;
+int search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
+    *current = list;
     *precedent=NULL;
     while (*current != NULL)
     {
@@ -19,13 +19,13 @@ int search_id_RN(uint64_t id,recent_neighbors **current,recent_neighbors **prece
     return 0;
 }
 
-int equal_key(ip_port *key1, ip_port *key2){
+int equal_key(recent_neighbors list,ip_port *key1, ip_port *key2){
    return (memcmp(key1->ip, key2->ip, 16) == 0 ) & (key1->port == key2->port)
 }
 
-int search_key_RN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
+int search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
   recent_neighbors *tmp1,*tmp2;
-  if(search_id_RN(id,&tmp1,&tmp2)){
+  if(search_id_RN(list,id,&tmp1,&tmp2)){
     *current = tmp1->key;
     *precedent=NULL;
     while (*current != NULL)
@@ -40,14 +40,25 @@ int search_key_RN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent
 }
 
 
+recent_neighbors* symetric_neighbors(){
+  recent_neighbors *tmp,*result=NULL;
+  while(tmp!=NULL){
+    if(tmp->symetric==1){
+      if(result!=NULL)
+        tmp->next=result;
+      result=tmp;
+    }
+  }
+  return result;
+}
 
 void create_recent_neighbor(uint64_t id,ip_port*  key,int symetric,time_t hello_t,time_t long_hello_t){
   recent_neighbors *tmp1,*tmp2;
   //neighbor exist deja
-  if(search_id_RN(id,&tmp1,&tmp2)){
+  if(search_id_RN(MY_RN,id,&tmp1,&tmp2)){
     ip_port *tmp11,*tmp22;
     //key exist deja
-    if(search_key_RN(tmp1,&tmp11,&tmp22)){
+    if(search_key_RN(MY_RN,tmp1,&tmp11,&tmp22)){
         return;
     }
     else{
@@ -81,21 +92,21 @@ void create_recent_neighbor(uint64_t id,ip_port*  key,int symetric,time_t hello_
   }
 }
 
-void delete_id_RN(uint64_t id){
+void delete_id_RN(recent_neighbors *list,uint64_t id){
   recent_neighbors *current,*precedent;
-  if(search_id_RN(id,&current,&precedent)){
+  if(search_id_RN(list,id,&current,&precedent)){
     //la list contient un seul element
     if(precedent!=NULL)
-      MY_RN=NULL;
+      list=NULL;
     else
       precedent->next=current->next;
     free(current);
   }
 }
 
-void delete_key_RN(uint64_t id,ip_port*  key){
+void delete_key_RN(recent_neighbors *list,uint64_t id,ip_port*  key){
   ip_port *current,*precedent;
-  if(search_key_RN(id,key,&current,&precedent)){
+  if(search_key_RN(list,id,key,&current,&precedent)){
     //la list contient un seul element
     if(precedent!=NULL)
       delete_id_RN(id);
@@ -212,7 +223,7 @@ int search_data(data_key key){
     return -1;
 }
 
-void create_data(data_key key,time_t data_time,char* data,potential_neighbors* data_neighbors,uint8_t nb){
+void create_data( ey,time_t data_time,char* data,potential_neighbors* data_neighbors,uint8_t nb){
 
   //neighbor exist deja
   if(search_data(key)==-1){
@@ -222,10 +233,20 @@ void create_data(data_key key,time_t data_time,char* data,potential_neighbors* d
     elem->data_time=data_time;
     memcpy(elem->data,data,strlen(data));
     elem->data_neighbors=data_neighbors;
-    elem-nb=nb;
+    elem->nb=nb;
 
     //ajout d'un nouveau data
+    if(COUNT==TAILLE)
+      COUNT=0;
     MY_DATA[COUNT]=elem;
     COUNT++;
+
+  }
+}
+
+void delete_data(data_key key){
+  int i=search_data(key)!=-1
+  if(i!=-1){
+
   }
 }

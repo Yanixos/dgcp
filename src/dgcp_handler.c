@@ -17,12 +17,12 @@
 uint64_t his_id;
 
 
-void dgcp_send(int s, unsigned char ipv6[], int port, dgc_packet p2send)
+void dgcp_send(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2send)
 {
      struct sockaddr_in6 his_peer6 = {0};
 
      his_peer6.sin6_family = AF_INET6;
-     his_peer6.sin6_port = htons(port);
+     his_peer6.sin6_port = port;
      memcpy((unsigned char*) &his_peer6.sin6_addr,ipv6,16);
 
      /*if(inet_pton(AF_INET6, (char *)ipv6, &his_peer6.sin6_addr)<=0)
@@ -54,7 +54,7 @@ void *dgcp_recv(void *arguments)
      dgc_packet p2recv = {0};
 
      unsigned char ipv6[20] = "::ffff:81.194.27.155";
-     int port = 1212;
+     uint16_t port = 1212;
 
      /*uint32_t nonce = generate_nonce();
      uint8_t data_type = 0;
@@ -129,7 +129,7 @@ void *dgcp_recv(void *arguments)
      return NULL;
 }
 
-void header_handler(int s, unsigned char ipv6[], int port, dgc_packet p2recv)
+void header_handler(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2recv)
 {
      unsigned char buff[DGCP_SIZE];
      memcpy(buff, (const unsigned char*) &p2recv, sizeof(p2recv));
@@ -193,7 +193,7 @@ void header_handler(int s, unsigned char ipv6[], int port, dgc_packet p2recv)
 }
 
 
-void call_tlv_handler(int s, unsigned char ipv6[], int port, msg_body tlv, uint8_t type)
+void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, uint8_t type)
 {
      switch ( type )
      {
@@ -224,7 +224,7 @@ void call_tlv_handler(int s, unsigned char ipv6[], int port, msg_body tlv, uint8
      }
 }
 
-void hello_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
+void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
 {
      dgc_packet response = {0};
      if ( tlv.s_hello.length == 8 )
@@ -260,7 +260,7 @@ void hello_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
      }
 }
 
-void neighbor_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
+void neighbor_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
 {
      dgc_packet response = {0};
 
@@ -280,7 +280,7 @@ void neighbor_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
      }
 }
 
-void data_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
+void data_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
 {
      dgc_packet response = {0};
 
@@ -300,7 +300,7 @@ void data_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
      // forward the msg to my neighbors
 }
 
-void ack_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
+void ack_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
 {
      dgc_packet response = {0};
 
@@ -325,7 +325,7 @@ void ack_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
           dgcp_send(s,ipv6,port,response);
      }
 }
-void goaway_handler(int s, unsigned char ipv6[], int port, msg_body tlv)
+void goaway_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv)
 {
      dgc_packet response = {0};
 
