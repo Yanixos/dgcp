@@ -226,23 +226,22 @@ int search_data(data_key key){
     return -1;
 }
 
-void add_data(data_key key,time_t data_time,char* data,potential_neighbors* data_neighbors,uint8_t nb){
+int add_data(data_key key,char* data, uint8_t type, recent_neighbors* data_neighbors){
 
   //neighbor exist deja
   if(search_data(key)==-1){
     //creation de l'element
     data_array* elem= (data_array *) calloc(1,sizeof(data_array));
     elem->key = key;
-    elem->data_time=data_time;
     memcpy(elem->data,data,strlen(data));
     elem->data_neighbors=data_neighbors;
-    elem->nb=nb;
 
     //ajout d'un nouveau data
     if(COUNT==DATA_SIZE)
       COUNT=0;
     MY_DATA[COUNT]=elem;
+    int r = COUNT;
     COUNT++;
-
+    return r;
   }
 }
