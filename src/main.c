@@ -127,10 +127,14 @@ void *routine(void *args)
           tmp1 = rn;
           while  ( tmp1 != NULL )
           {
+<<<<<<< HEAD
+               sleep(30);
+=======
                sleep(3);
                i++;
                //if ( i % 4 == 0 )
                //     share_neighbors(s);
+>>>>>>> 77892b2f304e5dd43547ab3295ee38792c9ed4d9
                tmp2 = tmp1->key;
                while ( tmp2 )
                {
