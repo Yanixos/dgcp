@@ -16,7 +16,7 @@ int search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,r
         if ((*current)->id == id)
             return 1;
         *precedent=*current;
-        current = current->next;
+        *current = (*current)->next;
     }
     return 0;
 }
