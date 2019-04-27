@@ -6,25 +6,26 @@
 /*========= Function for RN =========*/
 
 // fix symetric_neighbors : u r not creating , ur just linking them, i need a real copy
+// fix search_key_RN : remove search id, bcz some neighbors doesn't have an id, we need to search everywhere for the (ip,port)
 
-recent_neighbors* search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
+int search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
     *current = list;
     *precedent=NULL;
     while (*current != NULL)
     {
         if ((*current)->id == id)
-            return *current;
+            return 1;
         *precedent=*current;
         current = current->next;
     }
-    return NULL;
+    return 0;
 }
 
 int equal_key(recent_neighbors list,ip_port *key1, ip_port *key2){
    return (memcmp(key1->ip, key2->ip, 16) == 0 ) & (key1->port == key2->port)
 }
 
-recent_neighbors* search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
+int search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
   recent_neighbors *tmp1,*tmp2;
   if(search_id_RN(list,id,&tmp1,&tmp2)){
     *current = tmp1->key;
@@ -32,12 +33,12 @@ recent_neighbors* search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,
     while (*current != NULL)
     {
         if (equal_key(key,*current))
-            return *current;
+            return 1;
         *precedent=*current;
         current = current->next;
     }
   }
-  return NULL;
+  return 0;
 }
 
 
@@ -140,21 +141,21 @@ void modify_symetric(uint64_t id,int symetric){
 }
 /*========= Function for PN =========*/
 
-potential_neighbors*  search_id_PN(uint64_t id,potential_neighbors **current,potential_neighbors **precedent){
+int search_id_PN(uint64_t id,potential_neighbors **current,potential_neighbors **precedent){
     *current = MY_PN;
     *precedent=NULL;
     while (*current != NULL)
     {
         if ((*current)->id == id)
-            return *current;
+            return 1;
         *precedent=*current;
         current = current->next;
     }
-    return NULL;
+    return 0;
 }
 
 
-potential_neighbors* search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
+int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
   potential_neighbors *tmp1,*tmp2;
   if(search_id_PN(id,&tmp1,&tmp2)){
     *current = tmp1->key;
@@ -162,12 +163,12 @@ potential_neighbors* search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip
     while (*current != NULL)
     {
         if (equal_key(key,*current))
-            return *current;
+            return 1;
         *precedent=*current;
         current = current->next;
     }
   }
-  return NULL;
+  return 0;
 }
 
 
