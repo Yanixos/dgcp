@@ -25,9 +25,11 @@ int equal_key(recent_neighbors list,ip_port *key1, ip_port *key2){
    return (memcmp(key1->ip, key2->ip, 16) == 0 ) & (key1->port == key2->port)
 }
 
-int search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
-  recent_neighbors *tmp1,*tmp2;
-  if(search_id_RN(list,id,&tmp1,&tmp2)){
+//recherche sans id
+int search_key_RN(recent_neighbors *list,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
+  recent_neighbors *tmp1=MY_RN,*tmp2=NULL;
+  while(tmp1!=NULL){
+    id=tmp1;
     *current = tmp1->key;
     *precedent=NULL;
     while (*current != NULL)
@@ -37,11 +39,13 @@ int search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,ip_port **curr
         *precedent=*current;
         current = current->next;
     }
+    tmp2=tmp1;
+    tmp1=tmp1->next;
   }
   return 0;
 }
 
-
+//creeer nouvelle list
 recent_neighbors* symetric_neighbors(){
 
   recent_neighbors *tmp,*result=NULL;
@@ -57,11 +61,12 @@ recent_neighbors* symetric_neighbors(){
 
 void create_recent_neighbor(uint64_t id,ip_port*  key,int symetric,time_t hello_t,time_t long_hello_t){
   recent_neighbors *tmp1,*tmp2;
+  uint64_t tmp;
   //neighbor exist deja
   if(search_id_RN(MY_RN,id,&tmp1,&tmp2)){
     ip_port *tmp11,*tmp22;
     //key exist deja
-    if(search_key_RN(MY_RN,tmp1,&tmp11,&tmp22)){
+    if(search_key_RN(MY_RN,tmp1,&tmp11,&tmp22,&tmp)){
         return;
     }
     else{
@@ -107,12 +112,14 @@ void delete_id_RN(recent_neighbors *list,uint64_t id){
   }
 }
 
-void delete_key_RN(recent_neighbors *list,uint64_t id,ip_port*  key){
+//sans id
+void delete_key_RN(recent_neighbors *list,ip_port*  key){
   ip_port *current,*precedent;
-  if(search_key_RN(list,id,key,&current,&precedent)){
+  uint64_t tmp;
+  if(search_key_RN(list,key,&current,&precedent,&tmp)){
     //la list contient un seul element
     if(precedent!=NULL)
-      delete_id_RN(id);
+      delete_id_RN(tmp);
     else
       precedent->next=current->next;
     free(current);
@@ -155,9 +162,10 @@ int search_id_PN(uint64_t id,potential_neighbors **current,potential_neighbors *
 }
 
 
-int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
-  potential_neighbors *tmp1,*tmp2;
-  if(search_id_PN(id,&tmp1,&tmp2)){
+int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
+  potential_neighbors *tmp1=MY_PN,*tmp2=NULL;
+  while(tmp1!=NULL){
+    id=tmp1;
     *current = tmp1->key;
     *precedent=NULL;
     while (*current != NULL)
@@ -167,6 +175,8 @@ int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent
         *precedent=*current;
         current = current->next;
     }
+    tmp2=tmp1;
+    tmp1=tmp1->next;
   }
   return 0;
 }
@@ -174,11 +184,12 @@ int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent
 
 void create_potentiel_neighbor(uint64_t id, ip_port*  key){
   potential_neighbors *tmp1,*tmp2;
+  uint64_t tmp;
   //neighbor exist deja
   if(search_id_PN(id,&tmp1,&tmp2)){
     ip_port *tmp11,*tmp22;
     //key exist deja
-    if(search_key_PN(tmp1,&tmp11,&tmp22)){
+    if(search_key_PN(tmp1,&tmp11,&tmp22,tmp)){
         return;
     }
     else{
