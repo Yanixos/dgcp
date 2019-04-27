@@ -6,6 +6,7 @@
 #include "header.h"
 
 #define TAILLE 256
+#define RETRIES 5
 
 recent_neighbors *MY_RN;
 potential_neighbors *MY_PN;
