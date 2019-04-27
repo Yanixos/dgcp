@@ -10,12 +10,64 @@
 #include <stdio.h>
 #include <netdb.h>
 #include <errno.h>
+#include <math.h>
 #include "dgcp_handler.h"
 
 #define PORT 1212
+#define NB_RETRIES 5
 
 recent_neighbors* rn;
 
+void data_flood(int s)
+{
+     for (int i=0; i<NB_DATA; i++)
+     {
+          while ( DATA[i].nb < NB_RETRIES )
+          {
+               potential_neighbors* tmp1 = DATA[i].data_neighbors;
+               while ( tmp1 != NULL )
+               {
+                    ip_port* tmp2 = tmp1->key;
+                    while ( tmp2 != NULL )
+                    {
+                         double t1 = pow(2,DATA[i].nb-1);
+                         double t2 = pow(2,DATA[i].nb);
+                         int t = (t1 + t2) / 2;
+                         sleep(t);
+                         dgc_packet p2send = {0};
+                         create_data(&p2send,strlen(DATA[i].data),DATA[i].key.id,DATA[i].key.nonce,DATA[i].type,DATA[i].data);
+                         dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+                         tmp2 = tmp2->next;
+                    }
+                    tmp1 = tmp1->next;
+               }
+               DATA[i].nb += 1;
+          }
+     }
+     data_clean(s);
+}
+
+void data_clean(int s )
+{
+     while ( NB_DATA > 0 )
+     {
+          potential_neighbors* tmp1 = DATA[i].data_neighbors;
+          while ( tmp1 != NULL )
+          {
+               ip_port* tmp2 = tmp1->key;
+               while ( tmp2 != NULL )
+               {
+                    dgc_packet p2send = {0};
+                    char msg[50];
+                    sprintf(msg,"You didn't ack this data : %d:%d",DATA[0].key.id,DATA[0].key.nonce);
+                    create_goaway(&p2send,strlen(msg),2,msg);
+                    dgcp_send(s,tmp2->ip,tmp2->port,p2send);
+                    tmp2 = tmp2->next;
+               }
+               tmp1 = tmp1->next;
+          }
+     }
+}
 
 void share_neighbors(int s)
 {
