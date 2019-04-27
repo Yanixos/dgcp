@@ -5,9 +5,6 @@
 
 /*========= Function for RN =========*/
 
-// fix symetric_neighbors : u r not creating , ur just linking them, i need a real copy
-// fix search_key_RN : remove search id, bcz some neighbors doesn't have an id, we need to search everywhere for the (ip,port)
-
 int search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,recent_neighbors **precedent){
     *current = list;
     *precedent=NULL;
@@ -25,7 +22,7 @@ int equal_key(recent_neighbors list,ip_port *key1, ip_port *key2){
    return (memcmp(key1->ip, key2->ip, 16) == 0 ) & (key1->port == key2->port)
 }
 
-int search_key_RN(recent_neighbors *list,uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
+int search_key_RN(recent_neighbors *list,ip_port* key,ip_port **current,ip_port **precedent){
   recent_neighbors *tmp1,*tmp2;
   if(search_id_RN(list,id,&tmp1,&tmp2)){
     *current = tmp1->key;
@@ -107,7 +104,7 @@ void delete_id_RN(recent_neighbors *list,uint64_t id){
   }
 }
 
-void delete_key_RN(recent_neighbors *list,uint64_t id,ip_port*  key){
+void delete_key_RN(recent_neighbors *list,ip_port*  key){
   ip_port *current,*precedent;
   if(search_key_RN(list,id,key,&current,&precedent)){
     //la list contient un seul element
@@ -155,7 +152,7 @@ int search_id_PN(uint64_t id,potential_neighbors **current,potential_neighbors *
 }
 
 
-int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent){
+int search_key_PN(ip_port* key,ip_port **current,ip_port **precedent){
   potential_neighbors *tmp1,*tmp2;
   if(search_id_PN(id,&tmp1,&tmp2)){
     *current = tmp1->key;
@@ -244,4 +241,18 @@ int add_data(data_key key,char* data, uint8_t type, recent_neighbors* data_neigh
     COUNT++;
     return r;
   }
+}
+
+void move_to_potential(ip_port* key, uint64_t id)
+{
+     for (ip_port* tmp=key; tmp != null; tmp = tmp->next)
+     {
+          dgc_packet p2send = {0};
+          char msg[] = "You didn't say hello since 2 minutes ago";
+          create_goaway(&p2send,strlen(msg),2,msg);
+          dgcp_send(s,tmp->ip,tmp->port,p2send);
+          create_potentiel_neighbor(id,tmp);
+     }
+     free(key);
+     delete_id_RN(MY_RN,id);
 }

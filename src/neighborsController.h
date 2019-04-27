@@ -10,7 +10,7 @@
 
 recent_neighbors *MY_RN;
 potential_neighbors *MY_PN;
-data_array MY_DATA[TAILLE];
+data_array MY_DATA[DATA_SIZE];
 int COUNT = 0;
 
 extern int search_id_RN(recent_neighbors *list,uint64_t id,recent_neighbors **current,recent_neighbors **precedent);
@@ -27,5 +27,6 @@ extern int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **pr
 extern void create_potentiel_neighbor(uint64_t id, ip_port*  key);
 extern int search_data(data_key key);
 extern int add_data(data_key key, char* data,uint8_t type, recent_neighbors* data_neighbors);
+extern void move_to_potential(ip_port* key, uint64_t id);
 
 #endif
