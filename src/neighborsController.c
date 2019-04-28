@@ -24,7 +24,7 @@ int equal_key(ip_port *key1, ip_port *key2){
 
 //recherche sans id
 int search_key_RN(recent_neighbors *list,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
-  recent_neighbors *tmp1=list,*tmp2=NULL;
+  recent_neighbors *tmp1=list;
   while(tmp1!=NULL){
     *id=tmp1->id;
     *current = tmp1->key;
@@ -36,7 +36,6 @@ int search_key_RN(recent_neighbors *list,ip_port* key,ip_port **current,ip_port 
         *precedent=*current;
         *current = (*current)->next;
     }
-    tmp2=tmp1;
     tmp1=tmp1->next;
   }
   return 0;
@@ -75,6 +74,7 @@ recent_neighbors* symetric_neighbors(){
       result=rn;
 
     }
+    tmp = tmp->next;
   }
   return result;
 }
@@ -133,11 +133,8 @@ void delete_id_RN(recent_neighbors *list,uint64_t id){
 }
 
 
-<<<<<<< HEAD
-=======
 //sans id
 
->>>>>>> 3c0e53acc881509923348cb76bac0c78ab9eb898
 void delete_key_RN(recent_neighbors *list,ip_port*  key){
   ip_port *current,*precedent;
   uint64_t tmp;
@@ -189,21 +186,11 @@ int search_id_PN(potential_neighbors *list,uint64_t id,potential_neighbors **cur
 
 
 int search_key_PN(potential_neighbors *list,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
-  potential_neighbors *tmp1=list,*tmp2=NULL;
+  potential_neighbors *tmp1=list;
 
-<<<<<<< HEAD
-int search_key_PN(ip_port* key,ip_port **current,ip_port **precedent){
-  potential_neighbors *tmp1,*tmp2;
-  if(search_id_PN(id,&tmp1,&tmp2)){
-int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent,uint64_t *id){
-  potential_neighbors *tmp1=MY_PN,*tmp2=NULL;
-  while(tmp1!=NULL){
-    id=tmp1;
-=======
   while(tmp1!=NULL){
     *id=tmp1->id;
 
->>>>>>> 3c0e53acc881509923348cb76bac0c78ab9eb898
     *current = tmp1->key;
     *precedent=NULL;
     while (*current != NULL)
@@ -213,7 +200,6 @@ int search_key_PN(uint64_t id,ip_port* key,ip_port **current,ip_port **precedent
         *precedent=*current;
         *current = (*current)->next;
     }
-    tmp2=tmp1;
     tmp1=tmp1->next;
   }
   return 0;
@@ -303,34 +289,54 @@ int add_data(data_key key,char* data, uint8_t type, recent_neighbors* data_neigh
   //neighbor exist deja
   if(search_data(key)==-1){
     //creation de l'element
-    data_array *elem= (data_array *) calloc(1,sizeof(data_array));
-    elem->key = key;
-    memcpy(elem->data,data,strlen(data));
-    elem->data_neighbors=data_neighbors;
+    MY_DATA[COUNT].key.id = key.id;
+    MY_DATA[COUNT].key.nonce = key.nonce;
+    MY_DATA[COUNT].data = strdup(data);
+    MY_DATA[COUNT].data_neighbors = data_neighbors;
 
     //ajout d'un nouveau data
     if(COUNT==DATA_SIZE)
       COUNT=0;
-    MY_DATA[COUNT]=*elem;
     int r = COUNT;
     COUNT++;
     return r;
   }
+  return -1;
 }
-<<<<<<< HEAD
-=======
 
-/*void move_to_potential(ip_port* key, uint64_t id)
+void print_recent()
 {
-     for (ip_port* tmp=key; tmp != NULL; tmp = tmp->next)
+     printf("Recent: \n");
+     recent_neighbors* tmp1 = MY_RN;
+     while (tmp1 != NULL)
      {
-          dgc_packet p2send = {0};
-          char msg[] = "You didn't say hello since 2 minutes ago";
-          create_goaway(&p2send,strlen(msg),2,msg);
-          dgcp_send(s,tmp->ip,tmp->port,p2send);
-          create_potentiel_neighbor(id,tmp);
+          printf("ID:%ld:\n",tmp1->id);
+          printf("\tSYM:%d\n",tmp1->symetric);
+          printf("\tLONG_HELLO:%ld\n",tmp1->long_hello_t);
+          printf("\tHELLO:%ld\n",tmp1->hello_t);
+          ip_port* tmp2 = tmp1->key;
+          while ( tmp2 != NULL )
+          {
+               printf("\t\t%s:%d\n",tmp2->ip,tmp2->port);
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
      }
-     free(key);
-     delete_id_RN(MY_RN,id);
-}*/
->>>>>>> 3c0e53acc881509923348cb76bac0c78ab9eb898
+}
+
+void print_potential()
+{
+     printf("Potential: \n");
+     potential_neighbors* tmp1 = MY_PN;
+     while (tmp1 != NULL)
+     {
+          printf("ID:%ld:\n",tmp1->id);
+          ip_port* tmp2 = tmp1->key;
+          while ( tmp2 != NULL )
+          {
+               printf("\t\t%s:%d\n",tmp2->ip,tmp2->port);
+               tmp2 = tmp2->next;
+          }
+          tmp1 = tmp1->next;
+     }
+}
