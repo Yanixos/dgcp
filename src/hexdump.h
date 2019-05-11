@@ -14,6 +14,7 @@ static void hexdump(const void * memory, size_t bytes, char in_out[])
      int j=0;
 
      printf("%s:\n",in_out );
+
      switch ( p[0] )
      {
           case 0 :
@@ -49,6 +50,7 @@ static void hexdump(const void * memory, size_t bytes, char in_out[])
                printf("UNKNOWN TLV...\n");
                break;
      }
+
 
      while (bytes)
      {

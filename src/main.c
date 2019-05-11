@@ -10,61 +10,77 @@
 #include <stdio.h>
 #include <netdb.h>
 #include <errno.h>
-#include <math.h>
 #include "dgcp_handler.h"
 
-#define PORT 1212
+#define PORT "1212"
 
-void *routine(void *args);
 
 int main(int argc, char** argv)
 {
-     int s,b;
-     struct sockaddr_in6 my_peer6 = {0};
-     int psize = sizeof(struct sockaddr_in6);
+     MY_RN = NULL;                                                              // initialize list of recent neighbors
+     MY_PN = NULL;                                                              // initialize list of potential neighbors
+     COUNT = 0;                                                                 // initialize data counter
+     POS = 0;                                                                   // initialize data positioner
 
-     struct sockaddr_in6 his_peer6 = {0};
+     MY_ID = generate_id();
 
-     char ipv6[20] = "::ffff:81.194.27.155";
-     int port = 1212;
+     int opt, s, b;
+     uint16_t myport;
+     char *hostname, *hisport;
 
-     his_peer6.sin6_family = AF_INET6;
-     his_peer6.sin6_port = htons(port);
-
-     if(inet_pton(AF_INET6, ipv6, &his_peer6.sin6_addr)<=0)
+     if ( argc != 7 || strcmp(argv[1],"-b") || strcmp(argv[3],"-h") || strcmp(argv[5],"-p") )
      {
-          fprintf(stderr,"inet_pton has failed\n");
+          fprintf(stderr, "Usage: %s -b 'binding port' -h 'neighbor hostname/IPv4/IPv6' -p 'neighbor port'\n",argv[0] );
           exit(EXIT_FAILURE);
      }
 
-     rn = (recent_neighbors *) calloc(1,sizeof(recent_neighbors));
-     rn->id = 0x677DC6234D2763B5;
-     rn->key = (ip_port*) calloc(1,sizeof(ip_port));
-     memcpy(rn->key->ip,(char *)&his_peer6.sin6_addr,16);
-     rn->key->port = htons(port);
-     rn->key->next = NULL;
-     rn->symetric = 1;
-     rn->hello_t = 0;
-     rn->long_hello_t = 0;
-     rn->next = NULL;
-
-     MY_ID = generate_id();
+     while((opt = getopt(argc, argv, "b:h:p:")) != -1)
+     {
+          switch(opt)
+          {
+               case 'b':
+                    myport = atoi(optarg);
+                    break;
+               case 'h':
+                    hostname = optarg;
+               case 'p':
+                    hisport = optarg;
+                    break;
+          }
+     }
 
      if ((s = socket(AF_INET6, SOCK_DGRAM, 0)) == -1)
      {
           perror("socket ");
           exit(EXIT_FAILURE);
      }
-
+     struct sockaddr_in6 my_peer6 = {0};
+     int psize = sizeof(struct sockaddr_in6);
 
      my_peer6.sin6_family = AF_INET6;
-     my_peer6.sin6_port   = htons(PORT);
+     my_peer6.sin6_port   = htons(myport);
 
      if ((b = bind(s, (struct sockaddr*)&my_peer6, psize)) < 0 )
      {
           perror("bind ");
           exit(EXIT_FAILURE);
      }
+
+     struct sockaddr_in6 his_peer6 = {0};
+     switch (get_peer_info(hostname, hisport, &s, &his_peer6))                      // get destination peer information
+     {
+          case -1:
+               fprintf(stderr, "Error: could not find host.\n");
+               exit(EXIT_FAILURE);
+          case -2:
+               fprintf(stderr, "Error: failed to create socket.\n");
+               exit(EXIT_FAILURE);
+     }
+
+     ip_port* key = (ip_port*) calloc(1,sizeof(ip_port));
+     memcpy(key->ip, &his_peer6.sin6_addr ,16);
+     key->port = his_peer6.sin6_port;
+     create_potentiel_neighbor(0,key);
 
      if ( pthread_mutex_init(&lock, NULL) != 0)
      {
@@ -78,61 +94,15 @@ int main(int argc, char** argv)
      error = pthread_create(&(tid[1]), NULL, &routine, &s );
      if ( error != 0 )
           printf("\nRoutine thread can't be created :[%s]", strerror(error));
-
-     //dgc_packet p2send = {0};
-     //create_pad1(&p2send);
-     //create_padN(&p2send,10);
-     //create_short_hello(&p2send);
-     //uint64_t id = 0x1122334455667788;
-     //create_long_hello(&p2send,id);
-     //unsigned char ip[16] = "1122334455667788";
-     //uint8_t p = 100;
-     //create_neighbor(&p2send,ip,p);
-     //uint32_t nonce = 0x12345678;
-     //create_ack(&p2send,id,nonce);
-     //char msg[] = "testing warning";
-     //uint8_t code = 3;
-     //create_goaway(&p2send,strlen(msg),code,msg);
-     //create_warning(&p2send,strlen(msg),msg);
-     //dgcp_send(s,ip,port,p2send);
+     error = pthread_create(&(tid[2]), NULL, &data_flood, &s );
+     if ( error != 0 )
+          printf("\nFlood thread can't be created :[%s]", strerror(error));
 
      pthread_join(tid[0], NULL);
      pthread_join(tid[1], NULL);
+     pthread_join(tid[2], NULL);
      pthread_mutex_destroy(&lock);
 
      close(s);
      return 0;
-}
-
-void *routine(void *args)
-{
-     int *arg = (int*) args;
-     int s = *arg;
-     recent_neighbors* tmp1;
-     ip_port* tmp2;
-     int i = 0;
-     while (1)
-     {
-          tmp1 = rn;
-          while  ( tmp1 != NULL )
-          {
-               sleep(30);
-               sleep(3);
-               i++;
-               if ( i % 4 == 0 )
-               {
-                    share_neighbors(s);
-                    check_neighbors(s);
-               }
-               tmp2 = tmp1->key;
-               while ( tmp2 )
-               {
-                    dgc_packet p2send = {0};
-                    create_long_hello(&p2send,tmp1->id);
-                    dgcp_send(s,tmp2->ip,tmp2->port,p2send);
-                    tmp2 = tmp2->next;
-               }
-               tmp1 = tmp1->next;
-          }
-     }
 }

@@ -10,29 +10,29 @@
 #include <time.h>
 #include "header.h"
 
-char* mac_eth0()
+char* mac_eth0()         // get the mac address of the eth0 interface
 {
      #define MAC_SIZE 6
 	struct ifreq buffer;
 	int fd = socket(AF_INET6, SOCK_DGRAM, 0);
 	memset(&buffer, 0x00, sizeof(buffer));
-	strcpy(buffer.ifr_name, "eth0");
-	ioctl(fd, SIOCGIFHWADDR, &buffer);
+	strcpy(buffer.ifr_name, "eth0");            // set the device name to etho0
+	ioctl(fd, SIOCGIFHWADDR, &buffer);          // access the hardware device's address
 	close(fd);
-     char* mac = malloc(MAC_SIZE*sizeof(char));
-     strcpy(mac,(char*) buffer.ifr_hwaddr.sa_data);
+     char* mac = malloc((MAC_SIZE+1)*sizeof(char));
+     memcpy(mac,(char*) buffer.ifr_hwaddr.sa_data,MAC_SIZE+1);   // read the mac address
      return mac;
 }
 
-uint64_t generate_id()
+uint64_t generate_id()                  // small hash algorithm to give a uniq fingerprint to the mac address
 {
-     uint64_t hash = 17570031337;
+     uint64_t hash = 17570031337;       // my secret value =DD
      int c;
 
-     char *mac = mac_eth0();
+     char *mac = mac_eth0();            // get the mac address
 
      while ((c = *mac++))
-          hash = ((hash << 5) + hash) + c;
+          hash = ((hash << 5) + hash) + c;   // hash it using the secret value
 
      return hash;
 }
@@ -40,12 +40,12 @@ uint64_t generate_id()
 uint32_t generate_nonce()
 {
      time_t s = time(NULL);
-     return (uint32_t) s;
+     return (uint32_t) s;          // return a 32bit value of the actual time
 }
 
 int check_header(dgc_packet* m)
 {
-     return ( m->header.magic == 93 && m->header.version == 2 );
+     return ( m->header.magic == 93 && m->header.version == 2 ); // check for the correct value of the header
 }
 
 void create_header(dgc_packet* m, uint16_t length)
