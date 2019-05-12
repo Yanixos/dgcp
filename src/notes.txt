@@ -1,21 +1,23 @@
+ilies fix your fucking delete_key_PN
+
+PMTU discovery & fragmentation
+
+Fix multiple connection in the same time
+
 Start exploring for neighbors
 
 do we always EXIT_FAILURE ??
 
 after the recvfrom do we wait for the handle call or we create other process
 
-every 30 sec send a long hello to everyone in recent_neighbors list
-
-check last hello time for everyone if > 2min send a goaway with code 2 and if non symetric move him to potential_neighbors else make him non symetric
-
-every 2min send neighbor tlv
-
 check for number of symetric neighbor if < 8 send long hello to potentials
-
-if data is not inside data list, print it and forward to everyone except the sender. else send an ack
 
 when ack is received delete the sender from the list
 
-consider a data as an ack if the data already exists
+search_recent_neighbors_key is not working
+
+fix add potential neighbor
+
+fix equal
 
 think about security stuff
