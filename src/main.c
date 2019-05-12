@@ -10,10 +10,12 @@
 #include <stdio.h>
 #include <netdb.h>
 #include <errno.h>
+#include "commandline.h"
 #include "dgcp_handler.h"
 
-#define PORT "1212"
-
+uint16_t myport;
+char *hostname, *hisport;
+void parse_argv(int argc, char**argv);
 
 int main(int argc, char** argv)
 {
@@ -21,33 +23,15 @@ int main(int argc, char** argv)
      MY_PN = NULL;                                                              // initialize list of potential neighbors
      COUNT = 0;                                                                 // initialize data counter
      POS = 0;                                                                   // initialize data positioner
+     rounds = 0;                                                                // counter for each 30sec round
+     verbose = 0;                                                                 // verbose mode
 
      MY_ID = generate_id();
+     MY_NICK = strdup("dgcp_user");
 
-     int opt, s, b;
-     uint16_t myport;
-     char *hostname, *hisport;
+     parse_argv(argc,argv);
 
-     if ( argc != 7 || strcmp(argv[1],"-b") || strcmp(argv[3],"-h") || strcmp(argv[5],"-p") )
-     {
-          fprintf(stderr, "Usage: %s -b 'binding port' -h 'neighbor hostname/IPv4/IPv6' -p 'neighbor port'\n",argv[0] );
-          exit(EXIT_FAILURE);
-     }
-
-     while((opt = getopt(argc, argv, "b:h:p:")) != -1)
-     {
-          switch(opt)
-          {
-               case 'b':
-                    myport = atoi(optarg);
-                    break;
-               case 'h':
-                    hostname = optarg;
-               case 'p':
-                    hisport = optarg;
-                    break;
-          }
-     }
+     int s, b;
 
      if ((s = socket(AF_INET6, SOCK_DGRAM, 0)) == -1)
      {
@@ -88,6 +72,7 @@ int main(int argc, char** argv)
           exit(EXIT_FAILURE);
      }
 
+
      int error = pthread_create(&(tid[0]), NULL, &dgcp_recv, &s);
      if ( error != 0 )
           printf("\nReceive thread can't be created :[%s]", strerror(error));
@@ -98,11 +83,40 @@ int main(int argc, char** argv)
      if ( error != 0 )
           printf("\nFlood thread can't be created :[%s]", strerror(error));
 
+     command_loop(s);
+
      pthread_join(tid[0], NULL);
      pthread_join(tid[1], NULL);
      pthread_join(tid[2], NULL);
+     pthread_join(tid[3], NULL);
      pthread_mutex_destroy(&lock);
 
      close(s);
      return 0;
+}
+
+void parse_argv(int argc, char **argv)
+{
+     int opt;
+
+     if ( argc != 7 || strcmp(argv[1],"-b") || strcmp(argv[3],"-h") || strcmp(argv[5],"-p") )
+     {
+          fprintf(stderr, "Usage: %s -b 'binding port' -h 'neighbor hostname/IPv4/IPv6' -p 'neighbor port'\n",argv[0] );
+          exit(EXIT_FAILURE);
+     }
+
+     while((opt = getopt(argc, argv, "b:h:p:")) != -1)
+     {
+          switch(opt)
+          {
+               case 'b':
+                    myport = atoi(optarg);
+                    break;
+               case 'h':
+                    hostname = optarg;
+               case 'p':
+                    hisport = optarg;
+                    break;
+          }
+     }
 }

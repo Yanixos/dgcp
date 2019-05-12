@@ -327,10 +327,10 @@ int add_data(data_key key,char* data, uint8_t type, recent_neighbors* data_neigh
   return -1;
 }
 
-void print_recent(recent_neighbors* rn)
+void print_recent()
 {
      printf("Recent neighbor list: \n");
-     recent_neighbors* tmp1 = rn;
+     recent_neighbors* tmp1 = MY_RN;
      while (tmp1 != NULL)
      {
           printf("ID:%lu:\n",tmp1->id);
@@ -349,10 +349,10 @@ void print_recent(recent_neighbors* rn)
      }
 }
 
-void print_potential(potential_neighbors* pn)
+void print_potential()
 {
      printf("Potential neighbor list: \n");
-     potential_neighbors* tmp1 = pn;
+     potential_neighbors* tmp1 = MY_PN;
      while (tmp1 != NULL)
      {
           printf("ID:%lu:\n",tmp1->id);
@@ -361,7 +361,7 @@ void print_potential(potential_neighbors* pn)
           {
                char str[INET6_ADDRSTRLEN];
                if(inet_ntop(AF_INET6, &tmp2->ip, str, sizeof(str)))
-                     printf("\t\t%s at %d\n", str, ntohs(tmp2->port));
+                     printf("\t%s at %d\n", str, ntohs(tmp2->port));
                tmp2 = tmp2->next;
           }
           tmp1 = tmp1->next;

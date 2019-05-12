@@ -6,8 +6,11 @@
 #include "header.h"
 #include "neighborsController.h"
 
-pthread_t tid[3];        // three threads
+pthread_t tid[4];        // three threads
 pthread_mutex_t lock;    // the thread lock to synchronize the shared data between threads
+
+int rounds;
+int verbose;
 
 extern int get_peer_info(char* hostname, char* port, int *sock, struct sockaddr_in6 *addr);        // fill peer information (ip,port)
 

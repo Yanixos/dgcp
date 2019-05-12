@@ -15,9 +15,6 @@
 #include "hexdump.h"
 #include "dgcp_handler.h"
 
-int rounds = 0;                                                        // counter for each 30sec round
-int debug = 1;                                                         // verbose mode
-
 int get_peer_info(char* hostname, char* port, int *sock, struct sockaddr_in6 *addr)
 {
      struct addrinfo hints, *r, *p;
@@ -61,10 +58,10 @@ void *routine(void *args)                                              // each 3
           while  ( tmp1 != NULL )
           {
 
-               if ( debug )
+               if ( verbose )
                {
-                    print_recent(MY_RN);
-                    print_potential(MY_PN);
+                    print_recent();
+                    print_potential();
                }
                sleep(30);                                             // wait for 30 sec
                rounds++;
@@ -74,9 +71,9 @@ void *routine(void *args)                                              // each 3
                {
                     dgc_packet p2send = {0};
                     create_long_hello(&p2send,tmp1->id);
-                    pthread_mutex_lock(&lock);                        // lock the thread for synchronizing the R/W of the shared data
+                    //pthread_mutex_lock(&lock);                        // lock the thread for synchronizing the R/W of the shared data
                     dgcp_send(s,tmp2->ip,tmp2->port,p2send);          // send a long hello for the recent neighbors
-                    pthread_mutex_unlock(&lock);                      // unlock the thread for synchronizing the R/W of the shared data
+                    //pthread_mutex_unlock(&lock);                      // unlock the thread for synchronizing the R/W of the shared data
                     tmp2 = tmp2->next;
                }
 
@@ -86,7 +83,7 @@ void *routine(void *args)                                              // each 3
                     check_neighbors(s);                               // update neighbors data
                }
 
-               if ( rounds % 6 == 0 )                                 // if 3mn passed
+               if ( rounds % 3 == 0 )                                 // if 1mn30sec passed
                     discover_neighbors(s);                            // discover neighbors
 
                tmp1 = tmp1->next;
@@ -141,7 +138,7 @@ void *dgcp_recv(void *arguments)
                }
                time_t t = time(NULL);                                                          // keep track of the time of receiving data
                FD_CLR(s, &read_fds);                                                           // close the read fd
-               if ( debug )
+               if ( verbose )
                {
                     getpeername(s, (struct sockaddr *) &peer6, &addrlen);
                     char str[INET6_ADDRSTRLEN];
@@ -186,8 +183,8 @@ void *data_flood(void *args)
                               dgc_packet p2send = {0};
                               pthread_mutex_lock(&lock);                                        // lock the thread for synchronizing the R/W of the shared data
                               create_data(&p2send,strlen(MY_DATA[i].data),MY_DATA[i].key.id,MY_DATA[i].key.nonce,MY_DATA[i].type,MY_DATA[i].data);
-                              pthread_mutex_unlock(&lock);                                        // unlock the thread for synchronizing the R/W of the shared data
                               dgcp_send(s,tmp2->ip,tmp2->port,p2send);          // send the data
+                              pthread_mutex_unlock(&lock);                                        // unlock the thread for synchronizing the R/W of the shared data
                               tmp2 = tmp2->next;
                          }
                          tmp1 = tmp1->next;
@@ -212,14 +209,17 @@ void dgcp_send(int s, unsigned char ipv6[], uint16_t port, dgc_packet p2send)
 
      socklen_t addrlen = sizeof(his_peer6);
      int size = p2send.header.body_length + 4;                                               // get the size of the packet to send
+     char str[INET6_ADDRSTRLEN];
+     char *r = (char*) inet_ntop(AF_INET, &ipv6, str, sizeof(str));
      if ( sendto(s, (char*) &p2send, size, 0, (struct sockaddr *) &his_peer6, addrlen) < 0 ) // send the packet
      {
-          char str[INET6_ADDRSTRLEN];
-          if(inet_ntop(AF_INET6, &ipv6, str, sizeof(str)))
+          if( r && verbose )
                 printf("Unreachable host : %s at %d\n", str, ntohs(port));
           return ;
      }
-     if ( debug )
+     if( r && verbose )
+          printf("Sending to : %s at %d\n", str, ntohs(port));
+     if ( verbose )
           hexdump((char*) &p2send.tlv, p2send.tlv.padn.length+2,"Sent");                            // print the sent packet
 }
 
@@ -303,11 +303,11 @@ void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, 
      switch ( type )
      {
           case 0 :
-               if ( debug )
+               if ( verbose )
                     hexdump((char *)&tlv,1,"Received");                    // if pad1 received then just print it for the log, not actions
                break;
           case 1 :
-               if ( debug )
+               if ( verbose )
                     hexdump((char *)&tlv,tlv.padn.length+2,"Received");    // if padn received then just print it for the log, not actions
                break;
           case 2 :
@@ -326,8 +326,8 @@ void call_tlv_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, 
                goaway_handler(s,ipv6,port,tlv,t);                     // call goaway_handler
                break;
           case 7 :
-               if ( debug )
-                    printf("he sent a warning : %s\n",tlv.warning.message);// if a warning is received then print it for the lo, no actions
+               if ( verbose )
+                    printf("He sent a warning : %s\n",tlv.warning.message);// if a warning is received then print it for the lo, no actions
                break;
      }
 }
@@ -341,7 +341,7 @@ void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, tim
      key->port = port;
      if ( tlv.s_hello.length == 8 )                              // if it's a short hello
      {
-          if ( debug )
+          if ( verbose )
                hexdump((char *)&tlv,tlv.s_hello.length+2,"Received");
           if (  (current = search_recent_neighbors_key(MY_RN,key)) != NULL )    // if the sender exists in my recent_neighbors list
                current->hello_t = t;                             // refresh the time of hello
@@ -351,7 +351,7 @@ void hello_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, tim
      }
      else if ( tlv.s_hello.length == 16 )                        // if it's a long hello
      {
-          if ( debug )
+          if ( verbose )
                hexdump((char *)&tlv,tlv.l_hello.length+2,"Received");
           if ( tlv.l_hello.dst_id != MY_ID )                    // if the destination id is not mine
           {
@@ -396,7 +396,7 @@ void neighbor_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, 
 
      if ( tlv.neighbor.length == 18 )             // if the tlv length is correct
      {
-          if ( debug )
+          if ( verbose )
                hexdump((char *)&tlv, tlv.neighbor.length+2, "Received");
           if ( (current = search_recent_neighbors_key(MY_RN,key)) && current->symetric == 1)   // if the sender is our symetric neighbor
           {
@@ -427,7 +427,7 @@ void data_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time
      memcpy(key->ip,ipv6,16);
      key->port = port;
 
-     if ( debug )
+     if ( verbose )
           hexdump((char *)&tlv,tlv.data.length+2,"Received");
 
      if ( (current = search_recent_neighbors_key(MY_RN,key)) == NULL || current->symetric == 0 ) // if the sender is not a syemtric neighbor
@@ -448,7 +448,10 @@ void data_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time
                printf("%s\n",tlv.data.message);
 
           recent_neighbors* n = symetric_neighbors();            // get the actual syemtric neighbors
-          add_data(dkey,tlv.data.message,tlv.data.type,n);    // add the data to the data array
+          if ( n )
+               add_data(dkey,tlv.data.message,tlv.data.type,n);    // add the data to the data array
+          else
+               fprintf(stderr, "Sorry, you don't have friends to talk with...\nNobody loves you =(\n");
      }
      else                                                             // if the data already exists in the data array
      {
@@ -466,7 +469,7 @@ void ack_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time_
      key->port = port;
      if ( tlv.ack.length == 12  )                           // if the ack length is correct
      {
-          if ( debug )
+          if ( verbose )
                hexdump((char *)&tlv,tlv.ack.length+2,"Received");
           if ( (current = search_recent_neighbors_key(MY_RN,key)) == NULL || current->symetric == 0) // if the sender is not a syemtric neighbor
           {
@@ -506,7 +509,7 @@ void goaway_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, ti
      memcpy(key->ip,ipv6,16);
      key->port = port;
 
-     if ( debug )
+     if ( verbose )
           hexdump((char *)&tlv,tlv.goaway.length+2,"Received");
 
      if ( (current = search_recent_neighbors_key(MY_RN,key)) == NULL )     // if the sender doesn't exists in our recent neighbor list
@@ -522,7 +525,7 @@ void goaway_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, ti
           printf("he is leaving the network : %s\n",tlv.goaway.message);
 
      else if ( tlv.goaway.code == 2 )
-          printf("he is saying that we didn't ack his data or we didn't send him a hello since long time.\n%s\n",tlv.goaway.message);
+          printf("%s\n",tlv.goaway.message);
      else if ( tlv.goaway.code == 3 )
           printf("he is saying that we didn't respect the protocol\n%s\n", tlv.goaway.message);
      else

@@ -28,8 +28,8 @@ extern void create_potentiel_neighbor(uint64_t id, ip_port*  key);
 extern void delete_key_PN(potential_neighbors **list,ip_port*  key);
 extern int search_data(data_key key);
 extern int add_data(data_key key, char* data,uint8_t type, recent_neighbors* data_neighbors);
-extern void print_recent(recent_neighbors* rn);
-extern void print_potential(potential_neighbors* pn);
+extern void print_recent();
+extern void print_potential();
 
 
 #endif
