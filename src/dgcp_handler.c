@@ -71,9 +71,7 @@ void *routine(void *args)                                              // each 3
                {
                     dgc_packet p2send = {0};
                     create_long_hello(&p2send,tmp1->id);
-                    //pthread_mutex_lock(&lock);                        // lock the thread for synchronizing the R/W of the shared data
                     dgcp_send(s,tmp2->ip,tmp2->port,p2send);          // send a long hello for the recent neighbors
-                    //pthread_mutex_unlock(&lock);                      // unlock the thread for synchronizing the R/W of the shared data
                     tmp2 = tmp2->next;
                }
 
@@ -446,7 +444,12 @@ void data_handler(int s, unsigned char ipv6[], uint16_t port, msg_body tlv, time
           dgcp_send(s,ipv6,port,response);                        // send back an ack
           if ( tlv.data.data_type == 0 )                          // print the data if its type of 0
                printf("%s\n",tlv.data.message);
-
+          else if ( tlv.data.data_type == 220 )
+               printf("Received fragmented packet\n");
+          else if ( tlv.data.data_type >= 2 && tlv.data.data_type <= 5 )
+               printf("Received a picture\n");
+          else
+               printf("Received unknown data\n");
           recent_neighbors* n = symetric_neighbors();            // get the actual syemtric neighbors
           if ( n )
                add_data(dkey,tlv.data.message,tlv.data.type,n);    // add the data to the data array

@@ -24,7 +24,7 @@ int main(int argc, char** argv)
      COUNT = 0;                                                                 // initialize data counter
      POS = 0;                                                                   // initialize data positioner
      rounds = 0;                                                                // counter for each 30sec round
-     verbose = 0;                                                                 // verbose mode
+     verbose = 1;                                                               // verbose mode
 
      MY_ID = generate_id();
      MY_NICK = strdup("dgcp_user");

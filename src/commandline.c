@@ -10,7 +10,7 @@
 #include <time.h>
 #include "commandline.h"
 
-char *help[] =
+char *help[] =                                                                  // command help
 {
      "nick 'NICKNAME' : set your nickname",
      "add 'ip' 'port' : add a new neighbor",
@@ -21,7 +21,7 @@ char *help[] =
      "leave : leave the chat"
 };
 
-char *cmd_name[] =
+char *cmd_name[] =                                                              // command name list
 {
      "nick",
      "add",
@@ -32,7 +32,7 @@ char *cmd_name[] =
      "leave"
 };
 
-int (*cmd_func[]) (char **, int) =
+int (*cmd_func[]) (char **, int) =                                              // command function list
 {
      &cmd_nick,
      &cmd_add,
@@ -43,30 +43,32 @@ int (*cmd_func[]) (char **, int) =
      &cmd_leave
 };
 
-void command_loop(int s)
+void command_loop(int s)                                                        // main loop
 {
      char* prompt;
      char* line;
      char** args;
 
-     initialize_readline ();                                                    // initialiser la completion automatique
+     initialize_readline ();                                                    // initialize auto completion
      do
      {
           args= (char**) calloc(3,sizeof(char *));
           prompt = "$ ";
-          line = readline (prompt);                                             // lecture du commande
+          line = readline(prompt);                                             // read commande
           if ( ! line  )                                                        // signal CNTRL+D
-               break;                                                           // on sort de la boucle
+               break;                                                           // leave the loop
 
           if ( !strcmp(line,"") )
                continue;
 
           call_func(line,args,s);
+          free(args);
      } while (1);
 
      free(args);
      free(line);
      free(prompt);
+     exit(EXIT_SUCCESS);
 }
 
 int call_func(char* line, char** args, int s)
@@ -150,7 +152,7 @@ int cmd_rm(char **args, int s)
 int cmd_send(char **args, int s)
 {
      char buffer[1024];
-     if ( nb != 3 )
+     if ( nb < 3 )
      {
           fprintf(stderr, "Syntax error.\n%s\n",help[3]);
           return -1;
@@ -160,9 +162,11 @@ int cmd_send(char **args, int s)
      dk.id = MY_ID;
      dk.nonce = (uint32_t) time(NULL);
      recent_neighbors* n = symetric_neighbors();
+     sprintf(buffer,"%s: ",MY_NICK);
      if ( n )
      {
-          snprintf(buffer,strlen(MY_NICK)+3+strlen(args[2]),"%s: %s",MY_NICK,args[2]);
+          for ( int i=2; i<nb; i++)
+               sprintf(buffer,"%s %s",buffer,args[i]);
           add_data(dk,buffer,type,n);
      }
      else

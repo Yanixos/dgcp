@@ -6,9 +6,10 @@
 #include <stdint.h>
 #include <time.h>
 
-#define DGCP_SIZE 4096-8    // UDP Header is 8 bytes
 uint64_t MY_ID;             // my pair ID
 char* MY_NICK;              // my pair NICKNAME
+
+#define DGCP_SIZE 4096-8    // UDP Header is 8 bytes
 
 typedef uint8_t type_t;
 enum type_enum
